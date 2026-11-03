@@ -1,24 +1,19 @@
 # Travel RAG
 
-A Python API project for a travel knowledge assistant. The project is being
-built incrementally: the current version is a small FastAPI application with
-two operational endpoints. Document ingestion, retrieval, LLM answers, and
-agent tools are planned, but are not implemented yet.
+A Python API project for a travel knowledge assistant. The current version
+provides health routes and a chat endpoint backed by a local Ollama model.
+Document ingestion, retrieval, grounded answers, and agent tools are planned,
+but are not implemented yet.
 
 ## Current features
 
 - `GET /` returns the plain-text message `server is running`.
-- `GET /health` returns a JSON health response:
-
-  ```json
-  {
-    "status": "ok",
-    "service": "travel-rag"
-  }
-  ```
-
+- `GET /health` returns `{"status": "ok", "service": "travel-rag"}`.
+- `POST /chat` sends a question to Ollama and returns the answer, request ID,
+  model-call latency, and token usage.
+- Invalid chat requests return HTTP 422; upstream failures return HTTP 502;
+  timeouts return HTTP 504. Errors include the request ID.
 - FastAPI provides interactive API documentation at `/docs`.
-- Pytest and FastAPI's `TestClient` cover both routes.
 
 ## Technology
 
@@ -26,13 +21,14 @@ agent tools are planned, but are not implemented yet.
 |---|---|
 | Python | Application language |
 | FastAPI | HTTP API framework |
-| Pydantic | API response validation and serialization |
+| Pydantic and pydantic-settings | API validation and environment-based settings |
 | Uvicorn | Local ASGI server |
+| httpx2 | Async HTTP client for Ollama |
+| Ollama | Local chat model runtime (`llama3:8b` by default) |
 | Pytest | Automated tests |
 
-The dependencies currently used by the app are listed in
-[`travel_rag/requirements.txt`](travel_rag/requirements.txt). An LLM integration,
-embedding model, and vector database have not been added yet.
+Dependencies are listed in [`travel_rag/requirements.txt`](travel_rag/requirements.txt).
+No embedding model or vector database is integrated yet.
 
 ## Project layout
 
@@ -41,33 +37,40 @@ embedding model, and vector database have not been added yet.
 ├── README.md
 ├── .github/
 │   └── docs/
+│       ├── 14-day-interview-plan.md
 │       ├── ARCHITECTURE.md
 │       └── plan.md
 └── travel_rag/
     ├── app/
     │   ├── api/
-    │   │   └── routes.py   # Root and health routes and health response model
-    │   └── main.py         # Creates the FastAPI app and registers the router
+    │   │   └── routes.py       # Root, health, and chat endpoints
+    │   ├── llm/
+    │   │   └── client.py       # Async Ollama client and chat result types
+    │   ├── config.py           # Ollama URL, model, and timeout settings
+    │   ├── main.py             # FastAPI app, client lifecycle, request IDs
+    │   └── schemas.py          # Chat request/response contracts
     ├── tests/
-    │   └── test_health.py  # HTTP contract tests for the routes
+    │   ├── test_chat.py
+    │   └── test_health.py
     ├── requirements.txt
     └── work-complete.md
 ```
 
-The project roadmap and target design are maintained in the repository's
-[implementation plan](.github/docs/plan.md) and
-[architecture document](.github/docs/ARCHITECTURE.md). The current verified
-work and next step are tracked in
-[work-complete.md](travel_rag/work-complete.md).
+The [14-day plan](.github/docs/14-day-interview-plan.md) is the priority
+roadmap. The [architecture](.github/docs/ARCHITECTURE.md) describes the target
+design, and [work-complete.md](travel_rag/work-complete.md) records verified
+progress and the next step.
 
 ## Requirements
 
 - Python 3.11 or newer
 - `pip`
+- [Ollama](https://ollama.com/) running locally with the configured model
+  available
 
-## Set up a local environment
+## Set up
 
-Run the commands from this directory (`travel_rag/`):
+Run these commands from the `travel_rag/` directory:
 
 ```bash
 python3 -m venv .venv
@@ -76,15 +79,22 @@ python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-On Windows PowerShell, activate the environment with:
+If you move the project, recreate `.venv` at its new location because virtual
+environment scripts can refer to their original absolute path.
 
-```powershell
-.venv\Scripts\Activate.ps1
-```
+## Configure Ollama
 
-If you move this project to a different directory, recreate `.venv` at its new
-location. Virtual environments can contain scripts that refer to the original
-absolute path.
+Defaults:
+
+| Environment variable | Default |
+|---|---|
+| `TRAVEL_RAG_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` |
+| `TRAVEL_RAG_OLLAMA_MODEL` | `llama3:8b` |
+| `TRAVEL_RAG_OLLAMA_TIMEOUT_SECONDS` | `60` |
+
+Set `TRAVEL_RAG_OLLAMA_MODEL` to a model tag installed in your Ollama setup if
+you use a different model. The default local Ollama configuration does not
+require an API key.
 
 ## Run the API
 
@@ -94,28 +104,22 @@ From `travel_rag/`, with the virtual environment activated:
 uvicorn app.main:app --reload
 ```
 
-Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to try the
-endpoints interactively. The OpenAPI schema is available at
+Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to try the API.
+The OpenAPI schema is at
 [http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json).
 
-You can also check the routes from a terminal:
+Example chat request:
 
 ```bash
-curl http://127.0.0.1:8000/
-curl http://127.0.0.1:8000/health
+curl -X POST http://127.0.0.1:8000/chat \
+  -H 'Content-Type: application/json' \
+  -d '{"question":"Reply with the single word hello."}'
 ```
 
-Expected responses:
+The response contains `answer`, `request_id`, `latency_ms`, and `token_usage`.
+The same request ID is also returned in the `X-Request-ID` response header.
 
-```text
-server is running
-```
-
-```json
-{"status":"ok","service":"travel-rag"}
-```
-
-Stop the development server with `Ctrl+C`.
+Stop the server with `Ctrl+C`.
 
 ## Run the tests
 
@@ -125,31 +129,24 @@ From `travel_rag/`:
 python -m pytest -q
 ```
 
-The tests use FastAPI's in-process `TestClient`; they do not require a separate
-Uvicorn server. They check the HTTP status and response body for each route.
+The tests use FastAPI's in-process `TestClient` and a fake chat client. They
+cover route behavior, request validation, request IDs, timeouts, and upstream
+failures without needing a running Ollama server.
 
 ## Request flow
 
-1. Uvicorn serves the FastAPI application specified by `app.main:app`.
-2. `app/main.py` creates the app and includes the router from
-   `app/api/routes.py`.
-3. FastAPI matches the requested path and method to a route handler.
-4. The handler returns a response. FastAPI serializes the health response as
-   JSON; the root route explicitly returns plain text.
-5. Tests make requests directly to the app and verify the resulting HTTP
-   contract.
+1. Uvicorn serves the FastAPI application at `app.main:app`.
+2. FastAPI middleware assigns a request ID. The app lifespan creates one shared
+   async HTTP client for Ollama and closes it at shutdown.
+3. FastAPI validates the JSON body as a `ChatRequest`.
+4. The `/chat` handler calls the Ollama client, measures the call, and returns a
+   typed `ChatResponse`; FastAPI serializes it as JSON.
+5. Tests replace the Ollama client with a fake to verify API behavior
+   deterministically.
 
 ## Planned direction
 
-The roadmap builds toward a travel-document question-answering API:
-
-1. Add a chat/model client and validated API input.
-2. Load synthetic travel documents, split them into chunks, and attach source
-   metadata.
-3. Embed and index the chunks, then implement retrieval.
-4. Generate answers grounded in retrieved documents and return citations.
-5. Add retrieval evaluation and, later, narrowly scoped tools and agent flows.
-
-These are planned milestones, not current features. Consult the
-[implementation plan](.github/docs/plan.md) for their order and the
-[architecture document](.github/docs/ARCHITECTURE.md) for the target design.
+Next, the project will add synthetic travel documents, chunking, embeddings,
+vector search, and answers grounded in retrieved sources. Evaluation and
+narrowly scoped tool/agent flows come later. These are roadmap items, not
+current features.

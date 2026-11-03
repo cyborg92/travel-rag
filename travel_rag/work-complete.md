@@ -2,52 +2,75 @@
 
 Last verified: 2026-11-03
 
-This file is the handoff for future chats: it records what is implemented and
-tested, what is only planned, and the next learning step. The roadmap is in
-`../.github/docs/plan.md`; the target design is in
+This is the project handoff for future chats. It records verified work, current
+gaps, and the next step. The priority roadmap is
+`../.github/docs/14-day-interview-plan.md`; the target design is
 `../.github/docs/ARCHITECTURE.md`.
 
 ## Current status
 
-The project has a working FastAPI application shell. It does **not** yet have an
-LLM endpoint or a RAG pipeline. Day 1 in the roadmap is in progress, not
-complete.
+The FastAPI shell and the first chat endpoint are implemented. The Day 1 chat
+step is working, but the full milestone is still in progress. There is no
+document ingestion or RAG pipeline yet.
 
 ## Work completed and verified
 
 - Created the `travel_rag/` Python project with an isolated `.venv`.
-- Created a FastAPI application in `app/main.py` and included its API router.
-- Added `GET /`, which returns the plain-text response `server is running`.
-- Added `GET /health`, which returns
-  `{"status": "ok", "service": "travel-rag"}`.
-- Added pytest coverage for both routes.
-- Verified from `travel_rag/` with `./.venv/bin/python -m pytest -q`:
-  **2 passed** (2026-11-03).
-- Learned the initial request path: Uvicorn serves the FastAPI `app`; FastAPI
-  matches the route decorator and invokes the handler; the handler response is
-  sent back to the client. `TestClient` exercises these HTTP contracts without
-  starting a separate server.
+- Created the FastAPI application and registered its API router.
+- Added `GET /`, returning plain text `server is running`.
+- Added `GET /health`, returning `{"status": "ok", "service": "travel-rag"}`.
+- Added `POST /chat` with a Pydantic request model. It rejects missing, blank,
+  overlong, and extra fields with HTTP 422.
+- Configured the default Ollama URL, model (`llama3:8b`), and timeout through
+  `pydantic-settings`; these can be overridden with `TRAVEL_RAG_OLLAMA_*`
+  environment variables.
+- Added an async Ollama client using the existing `httpx2` dependency. One
+  shared HTTP client is created and closed in FastAPI's lifespan.
+- Chat success responses include the answer, request ID, model-call latency,
+  and prompt/completion token counts. The ID is also returned in the
+  `X-Request-ID` header.
+- Validation errors return 422, Ollama timeouts return 504, and other Ollama
+  failures return 502. Error bodies include the request ID.
+- Added deterministic chat tests using a fake client for success, validation,
+  timeout, and upstream-error cases.
+- Verified with `cd travel_rag && ./.venv/bin/python -m pytest -q`:
+  **10 passed**.
+- Verified a real request through Uvicorn and local Ollama using `curl`. The
+  model returned `Hello`; the response included request ID
+  `23d8c88b-9981-4336-86e3-9c966dcfb13a`, latency, and token counts.
+- Manually tested `POST /chat` through FastAPI's interactive `/docs`; the
+  request succeeded.
+- Ran an unsupported-claim experiment: asked about a made-up
+  `covid-travel-tax` in the context of generic IndiGo travel policy. The model
+  responded with general COVID-related airline-policy information instead of
+  saying it did not know what the invented charge was. This was an observation
+  from raw chat, not a verified claim about any airline's actual policy.
+- Learned that FastAPI lifespan owns resources shared across requests, while
+  dependency injection lets tests substitute a fake chat client. Pydantic
+  validates the incoming request before the route handler runs.
 
 ## Not implemented yet
 
-- `POST /chat` and an LLM client, configuration, timeouts, and upstream-error
-  handling.
-- Document ingestion, chunking, embeddings, vector storage, retrieval, and
-  grounded answers.
-- Agent/tool flows, evaluation, and observability.
+- Document loading, chunking, embeddings, vector storage, and retrieval.
+- Grounded `/ask` answers, citations, and retrieval evaluation.
+- Tool calling, agent flows, human approval, and observability beyond the
+  request ID and chat response metrics.
 
-Ollama was previously noted as available in the local setup, but this
-application does not call it. The embedding model and vector store have not
-been selected or integrated.
+The local Ollama setup uses no API key; therefore, the plan's “bad API key”
+experiment does not apply to this local integration. Upstream failures and
+timeouts are covered through the fake-client tests.
 
 ## Next step
 
-Continue the Day 1 learning milestone from `../.github/docs/plan.md`: implement
-the first chat endpoint in a small step, explain the relevant FastAPI concepts
-as we go, and test the success and failure paths with a fake client. Do not mark
-Day 1 complete until its stated done criteria are met.
+Begin the synthetic policy corpus and chunking work in the 14-day plan. Use
+fictional policies, starting with Markdown so headings, tables, exceptions,
+and policy identifiers are easy to inspect. Compare fixed-size-with-overlap
+and structure-aware chunking, and test whether exceptions stay connected to
+their governing rules. Keep the distinction clear: the current `/chat`
+endpoint is not grounded RAG. Day 1 remains in progress until all applicable
+roadmap criteria have been addressed.
 
-## Running and testing
+## Run and test
 
 From the `travel_rag/` directory:
 
@@ -56,19 +79,19 @@ source .venv/bin/activate
 uvicorn app.main:app --reload
 ```
 
-In another terminal, from the same directory:
+In another terminal:
 
 ```bash
 ./.venv/bin/python -m pytest -q
 ```
 
-Try `GET /`, `GET /health`, or the interactive API documentation at
-`http://127.0.0.1:8000/docs`.
+Use `/docs` to inspect and call the API. Ollama must be running with the
+configured model available for real `/chat` requests; automated tests use a
+fake and do not require Ollama.
 
 ## Checkpoint maintenance
 
-Update this file after a roadmap milestone or meaningful learning checkpoint
-has been implemented and verified. Record the work, exact validation performed,
-remaining gaps, and next step. Keep incomplete work explicitly marked as
-in-progress; do not claim a feature is complete based only on a plan or an
-unverified code change.
+After each meaningful milestone, update this file with the implemented work,
+the exact validation run and result, remaining gaps, and next step. Only record
+work as complete after it has been verified; keep partial milestones marked
+in progress.

@@ -14,16 +14,23 @@ Non-goals: model training, fine-tuning, multi-agent frameworks, production deplo
 
 ## Current implementation and technology
 
-The current checkpoint is a FastAPI shell, not a RAG pipeline:
+The current checkpoint provides basic API routes and a chat endpoint, but is
+not yet a RAG pipeline:
 
 - The application lives in `travel_rag/app/`; `travel_rag/app/main.py` creates the FastAPI app and includes the router.
-- `travel_rag/app/api/routes.py` currently provides `GET /` and `GET /health`.
-- Route behavior is covered by pytest tests under `travel_rag/tests/`.
-- The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic is used for response models.
-- Ollama is available in the local development environment, but the application does not call it yet. The embedding model is not selected.
+- `travel_rag/app/api/routes.py` provides `GET /`, `GET /health`, and `POST /chat`.
+- The chat route validates requests, calls a shared async Ollama client, and returns the answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to HTTP 422, 502, and 504.
+- Route behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic tests.
+- The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic and pydantic-settings are used for API contracts and configuration.
+- Ollama is integrated for chat with `llama3:8b` as the current default model. No embedding model has been selected.
 - No vector store, ingestion pipeline, retrieval layer, agent, or orchestration framework is currently implemented.
 
-The planned learning stack is Python + FastAPI/Pydantic, local Ollama for chat and embeddings, Chroma as the initial vector store, and pytest. The roadmap adds BM25/hybrid retrieval later. Model and vector-store details must be verified and recorded when those milestones are reached. Follow the roadmap's gate on orchestration frameworks: implement the mechanics directly through Day 9 before considering a framework.
+The planned learning stack is Python + FastAPI/Pydantic, local Ollama for chat
+and embeddings, Chroma as the initial vector store, and pytest. The roadmap
+adds BM25/hybrid retrieval later. Embedding and vector-store details must be
+verified and recorded when those milestones are reached. Follow the roadmap's
+gate on orchestration frameworks: implement the mechanics directly through
+Day 9 before considering a framework.
 
 ## 2. Vocabulary (be precise in interviews)
 
@@ -60,8 +67,8 @@ flowchart TD
 | Component | Responsibility | Key design notes |
 |---|---|---|
 | API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: FastAPI app and root/health routes. Planned: request validation and error mapping. | Pydantic is used for API response models; auth is not implemented |
-| Configuration (planned) | Typed settings and validated local model/store configuration | Add when a milestone needs configurable settings |
-| LLM client (planned) | Calls to local Ollama, timeouts, errors, and usage capture | Do not assume a provider SDK or retry behavior before implementation |
+| Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
+| LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
 | Ingestion (planned) | Extract, clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
 | Retrieval (planned) | Semantic retrieval first; add BM25/hybrid search at the planned milestone | Evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |

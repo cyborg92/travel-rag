@@ -1,4 +1,5 @@
 fastapi
 uvicorn[standard]
 httpx2
+pydantic-settings
 pytest

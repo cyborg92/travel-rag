@@ -1,5 +1,8 @@
 # Copilot Instructions: Travel RAG
 
+# 14-day-interview-plan
+- the file interview 14-day-interview-plan.md is the roadmap for the current scope and should be given priority till 17th november. Once done, we will build it as a full blown application and follow the whole architecture we are trying to focus.
+
 ## Project sources and current stage
 - Application code, tests, and dependencies are under `travel_rag/`.
 - The roadmap and its progress tracker are in `.github/docs/plan.md`.
@@ -16,10 +19,12 @@
 - Do not mark a whole roadmap day complete when only part of its objectives or done criteria are satisfied. Do not update the checkpoint to claim completion before validation; state any failed or unavailable checks accurately.
 
 ## Stack: implemented versus planned
-- Currently implemented: Python, FastAPI, Pydantic response models, Uvicorn, and pytest. The app currently exposes `GET /` and `GET /health`.
+- Currently implemented: Python, FastAPI, Pydantic, pydantic-settings, Uvicorn, httpx2, and pytest. Routes are `GET /`, `GET /health`, and `POST /chat`.
+- `/chat` calls the local Ollama chat API (default model `llama3:8b`) with a shared async HTTP client created and closed by the FastAPI lifespan.
+- Chat requests return an answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to 422, 502, and 504 respectively.
 - Current dependencies are exactly those in `travel_rag/requirements.txt`. Do not describe planned services or libraries as installed or integrated.
-- Ollama is available in the local development setup, but the app does not call it yet and an embedding model has not been selected.
-- Planned: Ollama for local chat and embeddings; Chroma as the initial vector store; BM25/hybrid retrieval in the roadmap's retrieval-improvement milestone. Choose and record model/store details when their milestones are reached.
+- Ollama is integrated for chat. Embeddings and a vector store are not yet integrated.
+- Planned: Ollama embeddings; Chroma as the initial vector store; BM25/hybrid retrieval in the roadmap's retrieval-improvement milestone. Choose and record model/store details when their milestones are reached.
 - Follow the roadmap's framework gate: implement the RAG path and agent loop directly before considering orchestration frameworks; do not add LangChain or LangGraph before Day 9 is complete. A later evaluation or adoption must be justified by the plan.
 - UI, deployment, Docker, and CI are not part of the current checkpoint unless the user asks or the roadmap brings them into scope.
 
