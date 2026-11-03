@@ -2,7 +2,7 @@
 
 > Owner: Rachit Handa (SDE-4 / G10, enterprise application engineer expanding into AI application engineering)
 > Goal: Personally build ONE end-to-end AI application, then defend every architectural decision in an SDE-4 interview.
-> All data is synthetic. Nothing here is real Amadeus production or passenger data.
+> All data is synthetic. Nothing here is real production or passenger data.
 
 ---
 
@@ -32,7 +32,7 @@ Problem -> Implement -> Run -> Something fails -> Understand why -> Debug -> Imp
 5. Always be able to answer: "Why does this need an agent?"
 6. Be honest in the interview. Positioning: *SDE-4 production/architecture maturity + rapidly developing hands-on AI implementation skill.*
 
-**Org compliance (Amadeus AI usage guidelines)**
+** compliance ( AI usage guidelines)**
 - Corporate account and managed device only. Use an LLM endpoint and key approved by the organization.
 - No secrets in code, config, examples, or git history. Local dev uses a git-ignored `.env`; real environments use AWS Secrets Manager / Azure Key Vault.
 - Synthetic data only. Never paste real PNRs, passenger names, payment data, or internal documents into prompts, logs, fixtures, or notebooks.

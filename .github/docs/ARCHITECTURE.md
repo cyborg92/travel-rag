@@ -10,7 +10,7 @@ An AI assistant for travel sellers that can:
 3. Propose consequential actions that require **human confirmation** before execution.
 4. Be **evaluated** and **observed** end to end.
 
-Non-goals: model training, fine-tuning, multi-agent frameworks, production deployment on real Amadeus systems, real passenger data.
+Non-goals: model training, fine-tuning, multi-agent frameworks, production deployment on real systems, real passenger data.
 
 ## Current implementation and technology
 
