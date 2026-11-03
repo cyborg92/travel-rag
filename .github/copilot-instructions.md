@@ -3,7 +3,7 @@
 ## Project sources and current stage
 - Application code, tests, and dependencies are under `travel_rag/`.
 - The roadmap and its progress tracker are in `.github/docs/plan.md`.
-- The target design is in `.github/docs/ARCHITECTURE.md`; `travel_rag/README.md` documents the current setup.
+- The target design is in `.github/docs/ARCHITECTURE.md`; the repository-root `README.md` documents the project and setup.
 - `travel_rag/work-complete.md` is the checkpoint and handoff: read it to establish what is actually done and what comes next.
 - At the start of each coding task, read these instructions and the checkpoint, then consult the relevant roadmap, architecture, README, and source files before changing code. The roadmap determines scope; architecture describes the target, not necessarily implemented behavior.
 - Treat the current files and test results as authoritative if they differ from an older note. Do not claim planned or historical work is implemented without checking.

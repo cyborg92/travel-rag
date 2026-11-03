@@ -31,27 +31,34 @@ agent tools are planned, but are not implemented yet.
 | Pytest | Automated tests |
 
 The dependencies currently used by the app are listed in
-[`requirements.txt`](requirements.txt). An LLM integration, embedding model,
-and vector database have not been added yet.
+[`travel_rag/requirements.txt`](travel_rag/requirements.txt). An LLM integration,
+embedding model, and vector database have not been added yet.
 
 ## Project layout
 
 ```text
-travel_rag/
-├── app/
-│   ├── api/
-│   │   └── routes.py       # Root and health routes and health response model
-│   └── main.py             # Creates the FastAPI app and registers the router
-├── tests/
-│   └── test_health.py      # HTTP contract tests for the routes
-├── requirements.txt
-└── README.md
+.
+├── README.md
+├── .github/
+│   └── docs/
+│       ├── ARCHITECTURE.md
+│       └── plan.md
+└── travel_rag/
+    ├── app/
+    │   ├── api/
+    │   │   └── routes.py   # Root and health routes and health response model
+    │   └── main.py         # Creates the FastAPI app and registers the router
+    ├── tests/
+    │   └── test_health.py  # HTTP contract tests for the routes
+    ├── requirements.txt
+    └── work-complete.md
 ```
 
 The project roadmap and target design are maintained in the repository's
-[implementation plan](../.github/docs/plan.md) and
-[architecture document](../.github/docs/ARCHITECTURE.md). The current verified
-work and next step are tracked in [work-complete.md](work-complete.md).
+[implementation plan](.github/docs/plan.md) and
+[architecture document](.github/docs/ARCHITECTURE.md). The current verified
+work and next step are tracked in
+[work-complete.md](travel_rag/work-complete.md).
 
 ## Requirements
 
@@ -144,5 +151,5 @@ The roadmap builds toward a travel-document question-answering API:
 5. Add retrieval evaluation and, later, narrowly scoped tools and agent flows.
 
 These are planned milestones, not current features. Consult the
-[implementation plan](../.github/docs/plan.md) for their order and the
-[architecture document](../.github/docs/ARCHITECTURE.md) for the target design.
+[implementation plan](.github/docs/plan.md) for their order and the
+[architecture document](.github/docs/ARCHITECTURE.md) for the target design.
