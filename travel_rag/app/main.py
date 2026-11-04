@@ -12,6 +12,7 @@ from starlette.responses import Response
 
 from app.config import get_settings
 from app.api.routes import router
+from app.embeddings.client import OllamaEmbeddingClient
 from app.llm.client import OllamaChatClient
 
 @asynccontextmanager
@@ -22,6 +23,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
         timeout=settings.ollama_timeout_seconds,
     ) as http_client:
         app.state.chat_client = OllamaChatClient(http_client, settings.ollama_model)
+        app.state.embedding_client = OllamaEmbeddingClient(
+            http_client,
+            settings.ollama_embedding_model,
+        )
         yield
 
 app = FastAPI(
@@ -58,4 +63,3 @@ async def validation_error_handler(
             "request_id": request.state.request_id,
         },
     )
-

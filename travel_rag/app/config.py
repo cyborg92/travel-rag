@@ -9,6 +9,7 @@ class Settings(BaseSettings):
 
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3:8b"
+    ollama_embedding_model: str = "nomic-embed-text"
     ollama_timeout_seconds: float = Field(default=60, gt=0)
 
 

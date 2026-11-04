@@ -1,10 +1,10 @@
 My 14-Day SDE-4 AI Interview Plan
-Progress as of November 4: Day 1 (FastAPI + first LLM endpoint) is complete.
-Day 2 (synthetic document ingestion and chunking) is in progress. Four
-synthetic Markdown policies are present, and a basic document loader has a
-passing test. Chunking is the next implementation task; embeddings and RAG are
-not implemented yet. See `../../travel_rag/work-complete.md` for verified
-details and validation results.
+Progress as of November 4: Day 1 (FastAPI + first LLM endpoint) and Day 2
+(synthetic document ingestion and chunking) are complete. Day 3 (embeddings
+and vector DB) is in progress: an Ollama embedding client is implemented and
+tested with fake HTTP responses; live embedding and vector storage remain.
+See `../../travel_rag/work-complete.md` for verified details and validation
+results.
 
 The goal
 I am not trying to learn every GenAI technology before the interview.
@@ -113,8 +113,13 @@ against local Ollama. The local Ollama setup does not use an API key, so the
 bad-key experiment does not apply. The fictional `covid-travel-tax` question
 produced a related generic answer rather than an uncertainty response.
 Step 2: Chunking
-Day 2 started November 4: four synthetic Markdown policies and a tested
-filename/text loader are present. Implement and compare chunking next.
+Day 2 completed November 4: four synthetic Markdown policies and a tested
+filename/text loader are present. Fixed-size character chunks with overlap
+and heading-based section chunks return source and chunk-index metadata;
+section chunks also identify their heading. Tests pass. In the baggage-policy
+comparison, fixed-size chunking at 400 characters cut the cabin-baggage
+exceptions heading at a chunk boundary, while section chunking kept the
+allowance table and its exceptions together.
 Create roughly four synthetic travel-policy documents:
 ticket change
 cancellation
@@ -136,6 +141,10 @@ Find at least one concrete example where a bad chunking strategy separates an ex
 The interview lesson is:
 Chunking isn't merely preprocessing. It changes what evidence retrieval can return and therefore directly affects answer quality.
 Step 3: Semantic retrieval
+Day 3 started November 4: selected `nomic-embed-text` as the local embedding
+baseline and implemented an Ollama embedding client. Fake-HTTP tests pass;
+Ollama was unavailable for a live request. Chroma indexing and semantic
+retrieval remain.
 Implement:
 Plain Text
 chunks

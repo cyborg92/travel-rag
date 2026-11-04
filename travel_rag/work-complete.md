@@ -10,11 +10,13 @@ gaps, and the next step. The priority roadmap is
 ## Current status
 
 - **Day 1 (FastAPI + first LLM endpoint): complete.**
-- **Day 2 (ingestion + chunking): in progress.** Four synthetic Markdown
-  policies, a tested document loader, and a tested fixed-size character
-  chunker with overlap are present. Structure-aware chunking and chunk
-  metadata remain.
-- No embeddings, vector store, retrieval, or grounded RAG endpoint yet.
+- **Day 2 (ingestion + chunking): complete.** Four synthetic policies are
+  loaded and chunked with fixed-size/overlap and heading-based strategies.
+  Chunk records carry source, zero-based index, text, and section when
+  structure-aware chunking is used.
+- **Day 3 (embeddings + vector store): in progress.** The Ollama embedding
+  client is configured for `nomic-embed-text` and tested with fake HTTP
+  responses. Chroma indexing and semantic retrieval remain.
 
 ## Work completed and verified
 
@@ -73,21 +75,49 @@ gaps, and the next step. The priority roadmap is
 - Verified `cd travel_rag && ./.venv/bin/python -m pytest tests/test_chunker.py -q`:
   **9 passed**; full suite `cd travel_rag && ./.venv/bin/python -m pytest -q`:
   **20 passed** on 2026-11-04.
+- Updated both chunkers to return dictionary records with `source`,
+  zero-based `chunk_index`, and `chunk`; section-based chunks also include a
+  `section` heading. The fixed-size chunker uses character counts and overlap;
+  section-based splitting keeps each `##` section together.
+- Ran the chunking comparison on the synthetic baggage policy. With
+  `chunk_size=400, overlap=0`, fixed-size chunk 1 ended in the middle of
+  `### Cabin-baggage exceptions` and chunk 2 began with the remainder, apart
+  from the cabin allowance table. The structure-aware chunk kept the table,
+  heading, and exception rules together in section 2. This is the concrete
+  example of chunk boundaries changing which context is available.
+- Added chunk-index assertions to the chunker tests. Verified
+  `cd travel_rag && ./.venv/bin/python -m pytest -q`: **21 passed** and
+  `git diff --check` passed on 2026-11-04.
+- Added `app/embeddings/client.py`, which sends text to Ollama's `/api/embed`
+  endpoint and returns a vector. It maps timeout and service/response failures
+  explicitly, rejects blank input and invalid vectors, and reuses the shared
+  async HTTP client from the application lifespan.
+- Updated the checkpoint and project/architecture roadmaps to mark Day 2
+  complete and Day 3 in progress. Added `.github/docs/decisions.md` to record
+  the initial embedding-model choice and its trade-offs.
+- Selected `nomic-embed-text` as the local baseline embedding model and added
+  `TRAVEL_RAG_OLLAMA_EMBEDDING_MODEL` configuration. The choice and trade-offs
+  are recorded in `.github/docs/decisions.md`.
+- Added fake-HTTP tests for successful embeddings, timeouts, upstream and
+  malformed responses, empty vectors, and blank input. Verified
+  `cd travel_rag && ./.venv/bin/python -m pytest tests/test_embeddings.py -q`:
+  **7 passed**; full suite `cd travel_rag && ./.venv/bin/python -m pytest -q`:
+  **28 passed** on 2026-11-04. Ollama was unavailable, so no live model request
+  has been verified.
 
 ## Not implemented yet
 
-- Chunking and chunk-level metadata.
-- Embeddings, vector storage, and retrieval.
+- Live embedding-model invocation, Chroma indexing, and semantic retrieval.
 - Grounded `/ask` answers, citations, and retrieval evaluation.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
 ## Next step
 
-Continue Day 2 by applying the fixed-size character chunker to one policy and
-inspecting the output, especially whether a rule and its exception remain
-together. Then implement structure-aware splitting and compare the results.
-The current `/chat` endpoint is not grounded RAG.
+Start Day 3 by running the embedding client against a locally available
+`nomic-embed-text` model. Then add Chroma indexing with stable IDs so rerunning
+ingestion updates rather than duplicates chunks, and implement semantic top-K
+retrieval. The current `/chat` endpoint is not grounded RAG.
 
 ## Run and test
 

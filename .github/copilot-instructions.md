@@ -10,7 +10,11 @@
 - Keep work incremental and explain design choices and trade-offs.
 
 ## Learning and progress handoff
-- This is a learning project. While implementing FastAPI work, explain the relevant concepts in context: how the app/router/route handler fit together, how requests and responses flow, and what the tests prove. Keep each explanation focused on the code being changed; do not bury the implementation in a long lecture.
+- This is a learning and interview-preparation project. The user wants to personally implement each roadmap day's main learning objective, as they did for document loading and chunking. Do not proactively implement the core learning task before the user has had a chance to work through it.
+- For each new concept, first identify a small, concrete action for the user to build and explain the relevant concepts briefly. Review their attempt and give a focused hint or correction; let the user make the implementation changes unless they explicitly ask the assistant to build that feature.
+- The user prefers to spend their time engineering and interview preparation rather than writing routine tests. The assistant may create focused tests after the user's implementation is in place, explain what those tests verify, and keep the user responsible for understanding and defending the design.
+- Keep the learning loop brisk: one small implementation or experiment, a review, and a concise interview-oriented takeaway. Avoid excessive step-by-step detours that slow roadmap progress.
+- While implementing FastAPI work, explain the relevant concepts in context: how the app/router/route handler fit together, how requests and responses flow, and what the tests prove. Keep each explanation focused on the code being changed; do not bury the implementation in a long lecture.
 - Prefer a small working change followed by a short explanation and a practical way for the learner to exercise or inspect it. When useful, ask the learner to predict a response or trace a request before explaining it.
 - After completing and verifying a roadmap milestone or a meaningful learning checkpoint, update `travel_rag/work-complete.md` with what changed, the exact validation run and result, what remains incomplete, and the next step.
 - Do not mark a whole roadmap day complete when only part of its objectives or done criteria are satisfied. Do not update the checkpoint to claim completion before validation; state any failed or unavailable checks accurately.

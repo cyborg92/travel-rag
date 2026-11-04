@@ -30,7 +30,13 @@ def chunk_text(
     while start < text_length:
         end = start + chunk_size
         chunk = text[start:end]
-        chunks.append({"source": filename, "chunk": chunk})
+        chunks.append(
+            {
+                "source": filename,
+                "chunk_index": len(chunks),
+                "chunk": chunk,
+            }
+        )
         if end >= text_length:
             break
         start += chunk_size - overlap
@@ -54,5 +60,12 @@ def chunk_section(text, filename: str = "unknown") -> list[dict]:
         if section.strip():
             heading = re.match(r"(?m)^##\s+(.+)$", section)
             heading_text = heading.group(1).strip() if heading else "Introduction"
-            results.append({"source": filename, "section": heading_text, "chunk": section.strip()})
+            results.append(
+                {
+                    "source": filename,
+                    "section": heading_text,
+                    "chunk_index": len(results),
+                    "chunk": section.strip(),
+                }
+            )
     return results

@@ -116,8 +116,8 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 ## 3. Progress tracker
 
 - [x] Day 1: FastAPI + first LLM endpoint
-- [ ] Day 2: Ingestion + chunking (in progress, Nov 4)
-- [ ] Day 3: Embeddings + vector DB
+- [x] Day 2: Ingestion + chunking (Nov 4)
+- [ ] Day 3: Embeddings + vector DB (in progress, Nov 4)
 - [ ] Day 4: Complete RAG
 - [ ] Day 5: Break and evaluate RAG
 - [ ] Day 6: Improve retrieval
@@ -164,9 +164,15 @@ API key, so the bad-key experiment does not apply.
 ### Day 2: Ingestion and chunking
 **Objective:** Synthetic policy docs -> clean -> chunk -> chunks with metadata.
 
-**Status (Nov 4): In progress.** Four synthetic Markdown policy documents are
-present under `travel_rag/data/policies/`. A basic loader and test are in place;
-chunking, chunk metadata, and the chunking comparison remain to be done.
+**Status (Nov 4): Complete.** Four synthetic Markdown policies are loaded by a
+tested filename/text loader. Fixed-size character chunks with overlap and
+heading-based section chunks return source and zero-based chunk-index metadata;
+section chunks also include their heading. Chunker tests pass. The comparison
+found that a 400-character fixed-size chunk cut the baggage-policy exceptions
+heading away from the table, while section chunking kept the whole section
+together. The scope follows the priority 14-day plan's four-policy target;
+version and effective-date metadata are not added because the synthetic
+documents do not provide those values.
 
 **Build**
 - Write 5-6 synthetic markdown policies in `data/policies/` (baggage, cancellation, refund, ticket-change, special-assistance, plus one deliberately contradictory or ambiguous doc)
@@ -178,7 +184,10 @@ chunking, chunk metadata, and the chunking comparison remain to be done.
 - Find a rule split mid-sentence; find an exception separated from its rule; find a table cut in half
 - Compare chunk counts/sizes across strategies and chunk sizes (200/400/800 tokens, overlap 0/10/20%)
 
-**Done when:** I can show a concrete example where chunking strategy changes answer quality.
+**Done when:** Complete. A concrete baggage-policy example shows fixed-size
+chunking cutting an exceptions heading from its table while heading-based
+chunking preserves the section. The comparison demonstrates a context-quality
+trade-off; no retrieval-quality improvement is claimed before retrieval exists.
 
 **Defend:** Why is chunking a retrieval-quality decision rather than a preprocessing detail? What metadata would I need for access control later?
 
@@ -186,6 +195,12 @@ chunking, chunk metadata, and the chunking comparison remain to be done.
 
 ### Day 3: Embeddings and vector database
 **Objective:** Chunks -> embeddings -> vector store; query -> top-K.
+
+**Status (Nov 4): In progress.** Selected `nomic-embed-text` as the local
+embedding baseline and added an Ollama `/api/embed` client with fake-HTTP tests.
+The local Ollama server was unavailable when checked, so a live embedding
+request remains unverified. Chroma indexing and semantic top-K retrieval are
+the next implementation steps.
 
 **Build**
 - Choose an embedding model and record why in `decisions.md`

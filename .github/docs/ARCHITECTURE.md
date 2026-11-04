@@ -21,10 +21,12 @@ not yet a RAG pipeline:
 - `travel_rag/app/api/routes.py` provides `GET /`, `GET /health`, and `POST /chat`.
 - The chat route validates requests, calls a shared async Ollama client, and returns the answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to HTTP 422, 502, and 504.
 - Four synthetic Markdown policy documents are present in `travel_rag/data/policies/`. `travel_rag/app/utils/doc_reader.py` loads sorted filename/text pairs; its test checks the four expected filenames and non-empty content.
-- Day 1 (chat endpoint) is complete. Day 2 (ingestion and chunking) is in progress; chunking, chunk metadata, and retrieval are not implemented.
+- Day 1 (chat endpoint) and Day 2 (ingestion and chunking) are complete. `travel_rag/app/utils/chunker.py` provides fixed-size character chunks with overlap and heading-based section chunks; records include source, zero-based chunk index, and text, with section heading for heading-based chunks.
+- `GET /chunkertest` displays the section chunks for manual inspection. This is a learning/debug route, not a retrieval endpoint.
+- Day 3 is in progress. `travel_rag/app/embeddings/client.py` calls Ollama's `/api/embed`; the configured model is `nomic-embed-text`. Fake-HTTP tests cover the response and failure cases, but a live embedding request has not been verified.
 - Route and document-loader behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic API tests.
 - The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic and pydantic-settings are used for API contracts and configuration.
-- Ollama is integrated for chat with `llama3:8b` as the current default model. No embedding model has been selected.
+- Ollama is integrated for chat with `llama3:8b` as the current default model; `nomic-embed-text` is configured for embeddings. No vector store or retrieval has been implemented.
 - No vector store, ingestion pipeline, retrieval layer, agent, or orchestration framework is currently implemented.
 
 The planned learning stack is Python + FastAPI/Pydantic, local Ollama for chat
@@ -49,7 +51,8 @@ Day 9 before considering a framework.
 The diagram below is the planned end state, not the current runtime path.
 Today, requests go through Uvicorn to FastAPI; `/chat` calls local Ollama,
 while the root and health routes remain simple. The four policy files can be
-loaded, but chunking, retrieval, RAG, and tool calling are not implemented.
+loaded and chunked for inspection. Embeddings, vector retrieval, grounded RAG,
+and tool calling are not implemented.
 
 ```mermaid
 flowchart TD
@@ -74,7 +77,8 @@ flowchart TD
 | API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: root, health, and chat routes. | Pydantic validates chat input and response; auth is not implemented |
 | Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
 | LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
-| Document loading (`travel_rag/app/utils/doc_reader.py`, initial) | Reads sorted Markdown policies and returns filenames with text | Chunking and chunk metadata are not implemented yet |
+| Document loading and chunking (`travel_rag/app/utils/`) | Reads sorted Markdown policies and produces fixed-size or heading-based chunk records | Metadata is currently source filename, chunk index, text, and section heading when available |
+| Embeddings (`travel_rag/app/embeddings/`) | Requests one vector from the configured Ollama embedding model | Shared async HTTP client; fake-HTTP tests; live Ollama request pending |
 | Ingestion (planned) | Clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
 | Retrieval (planned) | Semantic retrieval first; add BM25/hybrid search at the planned milestone | Evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |

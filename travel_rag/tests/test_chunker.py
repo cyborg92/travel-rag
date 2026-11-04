@@ -12,9 +12,9 @@ def test_chunk_text_splits_with_character_overlap() -> None:
     )
 
     assert chunks == [
-        {"source": "policy.md", "chunk": "ABCD"},
-        {"source": "policy.md", "chunk": "DEFG"},
-        {"source": "policy.md", "chunk": "GHIJ"},
+        {"source": "policy.md", "chunk_index": 0, "chunk": "ABCD"},
+        {"source": "policy.md", "chunk_index": 1, "chunk": "DEFG"},
+        {"source": "policy.md", "chunk_index": 2, "chunk": "GHIJ"},
     ]
 
 
@@ -28,7 +28,7 @@ def test_chunk_text_keeps_text_shorter_than_chunk_size_in_one_chunk() -> None:
         chunk_size=4,
         overlap=1,
         filename="policy.md",
-    ) == [{"source": "policy.md", "chunk": "ABC"}]
+    ) == [{"source": "policy.md", "chunk_index": 0, "chunk": "ABC"}]
 
 
 def test_chunk_text_returns_short_final_chunk_without_extra_chunk() -> None:
@@ -40,10 +40,10 @@ def test_chunk_text_returns_short_final_chunk_without_extra_chunk() -> None:
     )
 
     assert chunks == [
-        {"source": "policy.md", "chunk": "ABC"},
-        {"source": "policy.md", "chunk": "CDE"},
-        {"source": "policy.md", "chunk": "EFG"},
-        {"source": "policy.md", "chunk": "GH"},
+        {"source": "policy.md", "chunk_index": 0, "chunk": "ABC"},
+        {"source": "policy.md", "chunk_index": 1, "chunk": "CDE"},
+        {"source": "policy.md", "chunk_index": 2, "chunk": "EFG"},
+        {"source": "policy.md", "chunk_index": 3, "chunk": "GH"},
     ]
 
 
@@ -55,9 +55,24 @@ def test_chunk_section_keeps_source_and_section_heading() -> None:
     )
 
     assert chunks == [
-        {"source": "policy.md", "section": "Introduction", "chunk": "# Travel policy"},
-        {"source": "policy.md", "section": "Scope", "chunk": "## Scope\nApplies to all tickets."},
-        {"source": "policy.md", "section": "Exceptions", "chunk": "## Exceptions\nInfant rules differ."},
+        {
+            "source": "policy.md",
+            "section": "Introduction",
+            "chunk_index": 0,
+            "chunk": "# Travel policy",
+        },
+        {
+            "source": "policy.md",
+            "section": "Scope",
+            "chunk_index": 1,
+            "chunk": "## Scope\nApplies to all tickets.",
+        },
+        {
+            "source": "policy.md",
+            "section": "Exceptions",
+            "chunk_index": 2,
+            "chunk": "## Exceptions\nInfant rules differ.",
+        },
     ]
 
 
