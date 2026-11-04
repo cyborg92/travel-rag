@@ -11,7 +11,9 @@ gaps, and the next step. The priority roadmap is
 
 - **Day 1 (FastAPI + first LLM endpoint): complete.**
 - **Day 2 (ingestion + chunking): in progress.** Four synthetic Markdown
-  policies and a basic document loader are present. Chunking has not started.
+  policies, a tested document loader, and a tested fixed-size character
+  chunker with overlap are present. Structure-aware chunking and chunk
+  metadata remain.
 - No embeddings, vector store, retrieval, or grounded RAG endpoint yet.
 
 ## Work completed and verified
@@ -63,6 +65,14 @@ gaps, and the next step. The priority roadmap is
 - Verified the complete test suite with
   `cd travel_rag && ./.venv/bin/python -m pytest -q`: **11 passed** on
   2026-11-04.
+- Added `app/utils/chunker.py` with fixed-size character chunks and configurable
+  overlap. The loop stops after the final chunk, avoiding a redundant trailing
+  chunk when the previous chunk already reached the end of the text.
+- Added `tests/test_chunker.py` for overlap boundaries, empty and short text,
+  final partial chunks, and invalid chunk size/overlap values.
+- Verified `cd travel_rag && ./.venv/bin/python -m pytest tests/test_chunker.py -q`:
+  **9 passed**; full suite `cd travel_rag && ./.venv/bin/python -m pytest -q`:
+  **20 passed** on 2026-11-04.
 
 ## Not implemented yet
 
@@ -74,10 +84,10 @@ gaps, and the next step. The priority roadmap is
 
 ## Next step
 
-Continue Day 2 by implementing a fixed-size-with-overlap chunker, then a
-structure-aware chunker. Preserve the source filename on each chunk and test
-how each strategy handles a rule and its exception. The current `/chat`
-endpoint is not grounded RAG.
+Continue Day 2 by applying the fixed-size character chunker to one policy and
+inspecting the output, especially whether a rule and its exception remain
+together. Then implement structure-aware splitting and compare the results.
+The current `/chat` endpoint is not grounded RAG.
 
 ## Run and test
 
