@@ -1,3 +1,5 @@
+import re
+
 def chunk_text(
     text: str,
     chunk_size: int = 1000,
@@ -31,3 +33,20 @@ def chunk_text(
             break
         start += chunk_size - overlap
     return chunks
+
+def chunk_section(text) -> list[str]:
+    """
+    Split a document into sections based on a heading pattern.
+
+    Args:
+        text: The text to split.
+
+    Returns:
+        The resulting text sections.
+    """
+    sections = re.split(r"(?m)(?=^## )", text)
+    results = []
+    for section in sections:
+        if section.strip():
+            results.append(section.strip())
+    return results

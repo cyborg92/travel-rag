@@ -1,12 +1,3 @@
----
-doc_id: policy-disruption-v1
-title: SkyTrail Airways Disruption and Irregular Operations Policy
-policy_type: disruption
-version: 1.0
-effective_date: 2026-01-01
-status: synthetic-training-document
----
-
 # SkyTrail Airways Disruption and Irregular Operations Policy
 
 > **Training notice:** This is a fictional policy created for a synthetic TravelAssist RAG dataset. It does not represent a real airline or legal entitlement.

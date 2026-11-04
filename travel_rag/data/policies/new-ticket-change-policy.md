@@ -1,12 +1,3 @@
----
-doc_id: policy-ticket-change-v1
-title: SkyTrail Airways Ticket Change Policy
-policy_type: ticket-change
-version: 1.0
-effective_date: 2026-01-01
-status: synthetic-training-document
----
-
 # SkyTrail Airways Ticket Change Policy
 
 > **Training notice:** This is a fictional policy created for a synthetic TravelAssist RAG dataset. It does not represent a real airline.

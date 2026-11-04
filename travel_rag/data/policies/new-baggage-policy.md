@@ -1,12 +1,3 @@
----
-doc_id: policy-baggage-v1
-title: SkyTrail Airways Baggage Policy
-policy_type: baggage
-version: 1.0
-effective_date: 2026-01-01
-status: synthetic-training-document
----
-
 # SkyTrail Airways Baggage Policy
 
 > **Training notice:** This is a fictional policy created for a synthetic TravelAssist RAG dataset. It does not represent a real airline.

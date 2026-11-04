@@ -8,6 +8,9 @@ from pydantic import BaseModel
 from app.llm.client import ChatClient, ChatServiceError, ChatTimeoutError
 from app.schemas import ChatRequest, ChatResponse, TokenUsage
 
+from app.utils.doc_reader import load_documents
+from app.utils.chunker import chunk_text, chunk_section
+
 router = APIRouter()
 
 
@@ -61,3 +64,14 @@ class HealthResponse(BaseModel):
 @router.get("/health", response_model=HealthResponse, tags=["operations"])
 def health_check() -> HealthResponse:
     return HealthResponse(status="ok", service="travel-rag")
+
+@router.get("/chunkertest", tags=["operations"])
+def chunker_test() -> PlainTextResponse:
+    docs = load_documents()
+    chunk_details = []
+    for filename, text in docs:
+        chunks = chunk_section(text)
+        chunk_details.append(f"{filename}: {len(chunks)} chunks")
+        for index, chunk in enumerate(chunks, start=1):
+            chunk_details.append(f"Chunk {index}:\n{chunk}")
+    return PlainTextResponse("\n".join(chunk_details))

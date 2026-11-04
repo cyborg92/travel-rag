@@ -14,7 +14,6 @@ from app.config import get_settings
 from app.api.routes import router
 from app.llm.client import OllamaChatClient
 
-
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     settings = get_settings()
@@ -59,3 +58,4 @@ async def validation_error_handler(
             "request_id": request.state.request_id,
         },
     )
+
