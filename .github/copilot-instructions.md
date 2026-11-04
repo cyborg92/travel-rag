@@ -1,11 +1,8 @@
 # Copilot Instructions: Travel RAG
 
-# 14-day-interview-plan
-- the file interview 14-day-interview-plan.md is the roadmap for the current scope and should be given priority till 17th november. Once done, we will build it as a full blown application and follow the whole architecture we are trying to focus.
-
 ## Project sources and current stage
 - Application code, tests, and dependencies are under `travel_rag/`.
-- The roadmap and its progress tracker are in `.github/docs/plan.md`.
+- The priority roadmap through November 17 is `.github/docs/14-day-interview-plan.md`; use `.github/docs/plan.md` as supporting detail and reconcile it with the priority roadmap.
 - The target design is in `.github/docs/ARCHITECTURE.md`; the repository-root `README.md` documents the project and setup.
 - `travel_rag/work-complete.md` is the checkpoint and handoff: read it to establish what is actually done and what comes next.
 - At the start of each coding task, read these instructions and the checkpoint, then consult the relevant roadmap, architecture, README, and source files before changing code. The roadmap determines scope; architecture describes the target, not necessarily implemented behavior.

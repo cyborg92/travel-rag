@@ -1,9 +1,10 @@
 # Travel RAG
 
 A Python API project for a travel knowledge assistant. The current version
-provides health routes and a chat endpoint backed by a local Ollama model.
-Document ingestion, retrieval, grounded answers, and agent tools are planned,
-but are not implemented yet.
+provides health routes, a chat endpoint backed by local Ollama, and an initial
+utility for loading synthetic Markdown policies. The project is on Day 2:
+document chunking is in progress; retrieval and grounded answers are not yet
+implemented.
 
 ## Current features
 
@@ -14,6 +15,8 @@ but are not implemented yet.
 - Invalid chat requests return HTTP 422; upstream failures return HTTP 502;
   timeouts return HTTP 504. Errors include the request ID.
 - FastAPI provides interactive API documentation at `/docs`.
+- Four synthetic Markdown policies are in `travel_rag/data/policies/`.
+- `app/utils/doc_reader.py` loads policies as sorted filename/text pairs.
 
 ## Technology
 
@@ -46,12 +49,17 @@ No embedding model or vector database is integrated yet.
     │   │   └── routes.py       # Root, health, and chat endpoints
     │   ├── llm/
     │   │   └── client.py       # Async Ollama client and chat result types
+    │   ├── utils/
+    │   │   └── doc_reader.py   # Loads Markdown policy documents
     │   ├── config.py           # Ollama URL, model, and timeout settings
     │   ├── main.py             # FastAPI app, client lifecycle, request IDs
     │   └── schemas.py          # Chat request/response contracts
     ├── tests/
     │   ├── test_chat.py
+    │   ├── test_doc_reader.py
     │   └── test_health.py
+    ├── data/
+    │   └── policies/           # Four synthetic Markdown policy documents
     ├── requirements.txt
     └── work-complete.md
 ```
@@ -146,7 +154,8 @@ failures without needing a running Ollama server.
 
 ## Planned direction
 
-Next, the project will add synthetic travel documents, chunking, embeddings,
-vector search, and answers grounded in retrieved sources. Evaluation and
-narrowly scoped tool/agent flows come later. These are roadmap items, not
-current features.
+Day 1 (FastAPI and first LLM endpoint) is complete. Day 2 (ingestion and
+chunking) is in progress: the synthetic corpus and basic loader are present,
+and the loader test verifies four documents with non-empty text. Next is to
+implement and compare chunking strategies. Embeddings, vector search, grounded
+answers, evaluation, and tool/agent flows remain future milestones.

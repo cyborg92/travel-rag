@@ -115,8 +115,8 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 
 ## 3. Progress tracker
 
-- [ ] Day 1: FastAPI + first LLM endpoint
-- [ ] Day 2: Ingestion + chunking
+- [x] Day 1: FastAPI + first LLM endpoint
+- [ ] Day 2: Ingestion + chunking (in progress, Nov 4)
 - [ ] Day 3: Embeddings + vector DB
 - [ ] Day 4: Complete RAG
 - [ ] Day 5: Break and evaluate RAG
@@ -136,6 +136,11 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 
 ### Day 1: Python, FastAPI, first LLM endpoint
 **Objective:** `POST /chat` validates input, calls an LLM with a timeout, returns answer + request_id + latency + token usage.
+
+**Status (Nov 3): Complete.** `/chat` was tested with a fake client for
+validation, upstream failure, and timeout behavior, and manually through
+FastAPI `/docs` against local Ollama. The local Ollama setup does not use an
+API key, so the bad-key experiment does not apply.
 
 **Build**
 - venv, project skeleton, `.gitignore`, `.env.example`
@@ -158,6 +163,10 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 
 ### Day 2: Ingestion and chunking
 **Objective:** Synthetic policy docs -> clean -> chunk -> chunks with metadata.
+
+**Status (Nov 4): In progress.** Four synthetic Markdown policy documents are
+present under `travel_rag/data/policies/`. A basic loader and test are in place;
+chunking, chunk metadata, and the chunking comparison remain to be done.
 
 **Build**
 - Write 5-6 synthetic markdown policies in `data/policies/` (baggage, cancellation, refund, ticket-change, special-assistance, plus one deliberately contradictory or ambiguous doc)

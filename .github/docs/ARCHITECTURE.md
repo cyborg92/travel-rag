@@ -1,6 +1,6 @@
 # Travel RAG: Architecture
 
-> Learning project; all travel data is synthetic. This document describes the target design. The sibling `plan.md` is the source of truth for milestone order and progress.
+> Learning project; all travel data is synthetic. This document describes the target design. The sibling `14-day-interview-plan.md` is the priority roadmap; `plan.md` provides supporting milestone detail. `travel_rag/work-complete.md` records verified progress.
 
 ## 1. Purpose and scope
 
@@ -20,7 +20,9 @@ not yet a RAG pipeline:
 - The application lives in `travel_rag/app/`; `travel_rag/app/main.py` creates the FastAPI app and includes the router.
 - `travel_rag/app/api/routes.py` provides `GET /`, `GET /health`, and `POST /chat`.
 - The chat route validates requests, calls a shared async Ollama client, and returns the answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to HTTP 422, 502, and 504.
-- Route behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic tests.
+- Four synthetic Markdown policy documents are present in `travel_rag/data/policies/`. `travel_rag/app/utils/doc_reader.py` loads sorted filename/text pairs; its test checks the four expected filenames and non-empty content.
+- Day 1 (chat endpoint) is complete. Day 2 (ingestion and chunking) is in progress; chunking, chunk metadata, and retrieval are not implemented.
+- Route and document-loader behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic API tests.
 - The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic and pydantic-settings are used for API contracts and configuration.
 - Ollama is integrated for chat with `llama3:8b` as the current default model. No embedding model has been selected.
 - No vector store, ingestion pipeline, retrieval layer, agent, or orchestration framework is currently implemented.
@@ -44,7 +46,10 @@ Day 9 before considering a framework.
 
 ## 3. System context
 
-The diagram below is the planned end state, not the current runtime path. Today, requests go through Uvicorn to FastAPI and the implemented root/health routes; there is no LLM, RAG, or tool call in the application.
+The diagram below is the planned end state, not the current runtime path.
+Today, requests go through Uvicorn to FastAPI; `/chat` calls local Ollama,
+while the root and health routes remain simple. The four policy files can be
+loaded, but chunking, retrieval, RAG, and tool calling are not implemented.
 
 ```mermaid
 flowchart TD
@@ -66,10 +71,11 @@ flowchart TD
 
 | Component | Responsibility | Key design notes |
 |---|---|---|
-| API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: FastAPI app and root/health routes. Planned: request validation and error mapping. | Pydantic is used for API response models; auth is not implemented |
+| API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: root, health, and chat routes. | Pydantic validates chat input and response; auth is not implemented |
 | Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
 | LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
-| Ingestion (planned) | Extract, clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
+| Document loading (`travel_rag/app/utils/doc_reader.py`, initial) | Reads sorted Markdown policies and returns filenames with text | Chunking and chunk metadata are not implemented yet |
+| Ingestion (planned) | Clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
 | Retrieval (planned) | Semantic retrieval first; add BM25/hybrid search at the planned milestone | Evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |
 | Context builder (planned) | Select, order, label, and budget chunks | Controls prompt size and citation labels |

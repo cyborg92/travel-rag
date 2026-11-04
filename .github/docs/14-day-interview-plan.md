@@ -1,4 +1,11 @@
 My 14-Day SDE-4 AI Interview Plan
+Progress as of November 4: Day 1 (FastAPI + first LLM endpoint) is complete.
+Day 2 (synthetic document ingestion and chunking) is in progress. Four
+synthetic Markdown policies are present, and a basic document loader has a
+passing test. Chunking is the next implementation task; embeddings and RAG are
+not implemented yet. See `../../travel_rag/work-complete.md` for verified
+details and validation results.
+
 The goal
 I am not trying to learn every GenAI technology before the interview.
 I am trying to accomplish one thing:
@@ -100,7 +107,14 @@ tests with fake LLM client
 Then deliberately ask something the model has no evidence for.
 Observe it hallucinate.
 That gives me the reason for RAG rather than simply memorizing its definition.
+Day 1 completed November 3: `/chat` passed fake-client validation, timeout, and
+upstream-failure tests and was manually exercised through FastAPI `/docs`
+against local Ollama. The local Ollama setup does not use an API key, so the
+bad-key experiment does not apply. The fictional `covid-travel-tax` question
+produced a related generic answer rather than an uncertainty response.
 Step 2: Chunking
+Day 2 started November 4: four synthetic Markdown policies and a tested
+filename/text loader are present. Implement and compare chunking next.
 Create roughly four synthetic travel-policy documents:
 ticket change
 cancellation

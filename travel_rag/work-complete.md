@@ -1,6 +1,6 @@
 # Travel RAG: Progress checkpoint
 
-Last verified: 2026-11-03
+Last verified: 2026-11-04
 
 This is the project handoff for future chats. It records verified work, current
 gaps, and the next step. The priority roadmap is
@@ -9,9 +9,10 @@ gaps, and the next step. The priority roadmap is
 
 ## Current status
 
-The FastAPI shell and the first chat endpoint are implemented. The Day 1 chat
-step is working, but the full milestone is still in progress. There is no
-document ingestion or RAG pipeline yet.
+- **Day 1 (FastAPI + first LLM endpoint): complete.**
+- **Day 2 (ingestion + chunking): in progress.** Four synthetic Markdown
+  policies and a basic document loader are present. Chunking has not started.
+- No embeddings, vector store, retrieval, or grounded RAG endpoint yet.
 
 ## Work completed and verified
 
@@ -35,6 +36,11 @@ document ingestion or RAG pipeline yet.
   timeout, and upstream-error cases.
 - Verified with `cd travel_rag && ./.venv/bin/python -m pytest -q`:
   **10 passed**.
+- Completed the Day 1 experiments: manually called `POST /chat` through
+  FastAPI `/docs` against local Ollama and observed raw-chat behavior for the
+  fictional `covid-travel-tax` question. The local Ollama setup does not use an
+  API key, so the bad-key experiment does not apply. Timeout and upstream
+  failures were covered with the fake chat client.
 - Verified a real request through Uvicorn and local Ollama using `curl`. The
   model returned `Hello`; the response included request ID
   `23d8c88b-9981-4336-86e3-9c966dcfb13a`, latency, and token counts.
@@ -48,27 +54,30 @@ document ingestion or RAG pipeline yet.
 - Learned that FastAPI lifespan owns resources shared across requests, while
   dependency injection lets tests substitute a fake chat client. Pydantic
   validates the incoming request before the route handler runs.
+- Created four synthetic Markdown documents: ticket change, cancellation,
+  baggage, and disruption policies.
+- Added `app/utils/doc_reader.py` to load sorted Markdown files as
+  `(filename, text)` pairs.
+- Added `tests/test_doc_reader.py` to verify the four expected filenames and
+  non-empty text for every policy.
+- Verified the complete test suite with
+  `cd travel_rag && ./.venv/bin/python -m pytest -q`: **11 passed** on
+  2026-11-04.
 
 ## Not implemented yet
 
-- Document loading, chunking, embeddings, vector storage, and retrieval.
+- Chunking and chunk-level metadata.
+- Embeddings, vector storage, and retrieval.
 - Grounded `/ask` answers, citations, and retrieval evaluation.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
-The local Ollama setup uses no API key; therefore, the plan's “bad API key”
-experiment does not apply to this local integration. Upstream failures and
-timeouts are covered through the fake-client tests.
-
 ## Next step
 
-Begin the synthetic policy corpus and chunking work in the 14-day plan. Use
-fictional policies, starting with Markdown so headings, tables, exceptions,
-and policy identifiers are easy to inspect. Compare fixed-size-with-overlap
-and structure-aware chunking, and test whether exceptions stay connected to
-their governing rules. Keep the distinction clear: the current `/chat`
-endpoint is not grounded RAG. Day 1 remains in progress until all applicable
-roadmap criteria have been addressed.
+Continue Day 2 by implementing a fixed-size-with-overlap chunker, then a
+structure-aware chunker. Preserve the source filename on each chunk and test
+how each strategy handles a rule and its exception. The current `/chat`
+endpoint is not grounded RAG.
 
 ## Run and test
 
