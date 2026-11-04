@@ -144,8 +144,9 @@ Chunking isn't merely preprocessing. It changes what evidence retrieval can retu
 Step 3: Semantic retrieval
 Day 3 started November 4: selected `nomic-embed-text` as the local embedding
 baseline and implemented an Ollama embedding client. Fake-HTTP tests pass, and
-a live request on November 5 returned a 768-dimensional vector. Similarity
-comparison, Chroma indexing, and semantic retrieval remain.
+a live request on November 5 returned a 768-dimensional vector. The standalone
+experiment also successfully embedded the selected cabin-baggage section.
+Similarity comparison, Chroma indexing, and semantic retrieval remain.
 Implement:
 Plain Text
 chunks

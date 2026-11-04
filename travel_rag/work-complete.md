@@ -108,6 +108,9 @@ gaps, and the next step. The priority roadmap is
   with `nomic-embed-text`. It returned a 768-dimensional vector; the first
   five values were `[-0.037546925, 0.079259604, -0.1783307, -0.002847416,
   0.010480644]`. This verifies a live embedding request, not retrieval quality.
+- The standalone `app/utils/embedding_tester_script.py` now selects the
+  cabin-baggage section and successfully passes its text to the live embedding
+  client. This verifies chunk-to-embedding flow for one real policy section.
 
 ## Not implemented yet
 

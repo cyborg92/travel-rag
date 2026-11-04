@@ -198,9 +198,10 @@ trade-off; no retrieval-quality improvement is claimed before retrieval exists.
 
 **Status (Nov 5): In progress.** Selected `nomic-embed-text` as the local
 embedding baseline and added an Ollama `/api/embed` client with fake-HTTP tests.
-A live request returned a 768-dimensional vector. Next, compare query and
-chunk embeddings with cosine similarity, then implement Chroma indexing and
-semantic top-K retrieval.
+A live request returned a 768-dimensional vector, and a standalone script
+successfully embedded the selected cabin-baggage section. Next, compare query
+and chunk embeddings with cosine similarity, then implement Chroma indexing
+and semantic top-K retrieval.
 
 **Build**
 - Choose an embedding model and record why in `decisions.md`
