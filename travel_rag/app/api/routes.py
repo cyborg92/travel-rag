@@ -70,7 +70,7 @@ def chunker_test() -> PlainTextResponse:
     docs = load_documents()
     chunk_details = []
     for filename, text in docs:
-        chunks = chunk_section(text)
+        chunks = chunk_section(text, filename)
         chunk_details.append(f"{filename}: {len(chunks)} chunks")
         for index, chunk in enumerate(chunks, start=1):
             chunk_details.append(f"Chunk {index}:\n{chunk}")

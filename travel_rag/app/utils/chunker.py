@@ -4,7 +4,8 @@ def chunk_text(
     text: str,
     chunk_size: int = 1000,
     overlap: int = 200,
-) -> list[str]:
+    filename: str = "unknown",
+) -> list[dict]:
     """
     Split text into character-sized chunks with the requested overlap.
 
@@ -12,6 +13,7 @@ def chunk_text(
         text: The text to split.
         chunk_size: Maximum number of characters per chunk.
         overlap: Number of shared characters between adjacent chunks.
+        filename: The name of the file containing the text.
 
     Returns:
         The resulting text chunks.
@@ -28,25 +30,29 @@ def chunk_text(
     while start < text_length:
         end = start + chunk_size
         chunk = text[start:end]
-        chunks.append(chunk)
+        chunks.append({"source": filename, "chunk": chunk})
         if end >= text_length:
             break
         start += chunk_size - overlap
     return chunks
 
-def chunk_section(text) -> list[str]:
+def chunk_section(text, filename: str = "unknown") -> list[dict]:
     """
     Split a document into sections based on a heading pattern.
 
     Args:
         text: The text to split.
+        filename: The name of the file containing the text.
 
     Returns:
         The resulting text sections.
     """
     sections = re.split(r"(?m)(?=^## )", text)
+    
     results = []
     for section in sections:
         if section.strip():
-            results.append(section.strip())
+            heading = re.match(r"(?m)^##\s+(.+)$", section)
+            heading_text = heading.group(1).strip() if heading else "Introduction"
+            results.append({"source": filename, "section": heading_text, "chunk": section.strip()})
     return results

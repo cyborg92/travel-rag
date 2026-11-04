@@ -1,12 +1,21 @@
 import pytest
 
-from app.utils.chunker import chunk_text
+from app.utils.chunker import chunk_section, chunk_text
 
 
 def test_chunk_text_splits_with_character_overlap() -> None:
-    chunks = chunk_text("ABCDEFGHIJ", chunk_size=4, overlap=1)
+    chunks = chunk_text(
+        "ABCDEFGHIJ",
+        chunk_size=4,
+        overlap=1,
+        filename="policy.md",
+    )
 
-    assert chunks == ["ABCD", "DEFG", "GHIJ"]
+    assert chunks == [
+        {"source": "policy.md", "chunk": "ABCD"},
+        {"source": "policy.md", "chunk": "DEFG"},
+        {"source": "policy.md", "chunk": "GHIJ"},
+    ]
 
 
 def test_chunk_text_returns_empty_list_for_empty_text() -> None:
@@ -14,13 +23,42 @@ def test_chunk_text_returns_empty_list_for_empty_text() -> None:
 
 
 def test_chunk_text_keeps_text_shorter_than_chunk_size_in_one_chunk() -> None:
-    assert chunk_text("ABC", chunk_size=4, overlap=1) == ["ABC"]
+    assert chunk_text(
+        "ABC",
+        chunk_size=4,
+        overlap=1,
+        filename="policy.md",
+    ) == [{"source": "policy.md", "chunk": "ABC"}]
 
 
 def test_chunk_text_returns_short_final_chunk_without_extra_chunk() -> None:
-    chunks = chunk_text("ABCDEFGH", chunk_size=3, overlap=1)
+    chunks = chunk_text(
+        "ABCDEFGH",
+        chunk_size=3,
+        overlap=1,
+        filename="policy.md",
+    )
 
-    assert chunks == ["ABC", "CDE", "EFG", "GH"]
+    assert chunks == [
+        {"source": "policy.md", "chunk": "ABC"},
+        {"source": "policy.md", "chunk": "CDE"},
+        {"source": "policy.md", "chunk": "EFG"},
+        {"source": "policy.md", "chunk": "GH"},
+    ]
+
+
+def test_chunk_section_keeps_source_and_section_heading() -> None:
+    chunks = chunk_section(
+        "# Travel policy\n\n## Scope\nApplies to all tickets.\n\n"
+        "## Exceptions\nInfant rules differ.",
+        filename="policy.md",
+    )
+
+    assert chunks == [
+        {"source": "policy.md", "section": "Introduction", "chunk": "# Travel policy"},
+        {"source": "policy.md", "section": "Scope", "chunk": "## Scope\nApplies to all tickets."},
+        {"source": "policy.md", "section": "Exceptions", "chunk": "## Exceptions\nInfant rules differ."},
+    ]
 
 
 @pytest.mark.parametrize(
