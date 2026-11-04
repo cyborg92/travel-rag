@@ -3,9 +3,9 @@
 A Python API project for a travel knowledge assistant. The current version
 provides health routes, a chat endpoint backed by local Ollama, an embedding
 client, and utilities for loading and chunking synthetic Markdown policies.
-Day 2 (ingestion and chunking) is complete; embeddings have not been verified
-against a live model, and vector retrieval and grounded answers are not yet
-implemented.
+Day 2 (ingestion and chunking) is complete. A live `nomic-embed-text`
+embedding request has returned a vector; vector retrieval and grounded answers
+are not yet implemented.
 
 ## Current features
 
@@ -36,8 +36,8 @@ implemented.
 | Pytest | Automated tests |
 
 Dependencies are listed in [`travel_rag/requirements.txt`](travel_rag/requirements.txt).
-The Ollama embedding client is implemented but has not been live-tested because
-the local Ollama service was unavailable. No vector database is integrated yet.
+The Ollama embedding client is implemented and has been live-tested with
+`nomic-embed-text`. No vector database is integrated yet.
 
 ## Project layout
 

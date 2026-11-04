@@ -1,9 +1,10 @@
 My 14-Day SDE-4 AI Interview Plan
-Progress as of November 4: Day 1 (FastAPI + first LLM endpoint) and Day 2
+Progress as of November 5: Day 1 (FastAPI + first LLM endpoint) and Day 2
 (synthetic document ingestion and chunking) are complete. Day 3 (embeddings
-and vector DB) is in progress: an Ollama embedding client is implemented and
-tested with fake HTTP responses; live embedding and vector storage remain.
-See `../../travel_rag/work-complete.md` for verified details and validation
+and vector DB) is in progress: the Ollama embedding client passed fake-HTTP
+tests and returned a 768-dimensional vector in a live `nomic-embed-text`
+request. Similarity comparison and vector storage remain. See
+`../../travel_rag/work-complete.md` for verified details and validation
 results.
 
 The goal
@@ -142,9 +143,9 @@ The interview lesson is:
 Chunking isn't merely preprocessing. It changes what evidence retrieval can return and therefore directly affects answer quality.
 Step 3: Semantic retrieval
 Day 3 started November 4: selected `nomic-embed-text` as the local embedding
-baseline and implemented an Ollama embedding client. Fake-HTTP tests pass;
-Ollama was unavailable for a live request. Chroma indexing and semantic
-retrieval remain.
+baseline and implemented an Ollama embedding client. Fake-HTTP tests pass, and
+a live request on November 5 returned a 768-dimensional vector. Similarity
+comparison, Chroma indexing, and semantic retrieval remain.
 Implement:
 Plain Text
 chunks

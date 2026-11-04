@@ -196,11 +196,11 @@ trade-off; no retrieval-quality improvement is claimed before retrieval exists.
 ### Day 3: Embeddings and vector database
 **Objective:** Chunks -> embeddings -> vector store; query -> top-K.
 
-**Status (Nov 4): In progress.** Selected `nomic-embed-text` as the local
+**Status (Nov 5): In progress.** Selected `nomic-embed-text` as the local
 embedding baseline and added an Ollama `/api/embed` client with fake-HTTP tests.
-The local Ollama server was unavailable when checked, so a live embedding
-request remains unverified. Chroma indexing and semantic top-K retrieval are
-the next implementation steps.
+A live request returned a 768-dimensional vector. Next, compare query and
+chunk embeddings with cosine similarity, then implement Chroma indexing and
+semantic top-K retrieval.
 
 **Build**
 - Choose an embedding model and record why in `decisions.md`

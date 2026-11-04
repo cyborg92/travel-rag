@@ -1,6 +1,6 @@
 # Travel RAG: Progress checkpoint
 
-Last verified: 2026-11-04
+Last verified: 2026-11-05
 
 This is the project handoff for future chats. It records verified work, current
 gaps, and the next step. The priority roadmap is
@@ -15,8 +15,9 @@ gaps, and the next step. The priority roadmap is
   Chunk records carry source, zero-based index, text, and section when
   structure-aware chunking is used.
 - **Day 3 (embeddings + vector store): in progress.** The Ollama embedding
-  client is configured for `nomic-embed-text` and tested with fake HTTP
-  responses. Chroma indexing and semantic retrieval remain.
+  client is configured for `nomic-embed-text`, passed fake-HTTP tests, and
+  returned a 768-dimensional vector in a live call. Chroma indexing and
+  semantic retrieval remain.
 
 ## Work completed and verified
 
@@ -102,22 +103,26 @@ gaps, and the next step. The priority roadmap is
   malformed responses, empty vectors, and blank input. Verified
   `cd travel_rag && ./.venv/bin/python -m pytest tests/test_embeddings.py -q`:
   **7 passed**; full suite `cd travel_rag && ./.venv/bin/python -m pytest -q`:
-  **28 passed** on 2026-11-04. Ollama was unavailable, so no live model request
-  has been verified.
+  **28 passed** on 2026-11-04.
+- On 2026-11-05, the user ran the Python embedding client against local Ollama
+  with `nomic-embed-text`. It returned a 768-dimensional vector; the first
+  five values were `[-0.037546925, 0.079259604, -0.1783307, -0.002847416,
+  0.010480644]`. This verifies a live embedding request, not retrieval quality.
 
 ## Not implemented yet
 
-- Live embedding-model invocation, Chroma indexing, and semantic retrieval.
+- Chroma indexing and semantic retrieval.
 - Grounded `/ask` answers, citations, and retrieval evaluation.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
 ## Next step
 
-Start Day 3 by running the embedding client against a locally available
-`nomic-embed-text` model. Then add Chroma indexing with stable IDs so rerunning
-ingestion updates rather than duplicates chunks, and implement semantic top-K
-retrieval. The current `/chat` endpoint is not grounded RAG.
+Continue Day 3 by comparing embeddings for one policy-relevant query, a
+matching chunk, and an unrelated chunk using cosine similarity. Then add Chroma
+indexing with stable IDs so rerunning ingestion updates rather than duplicates
+chunks, and implement semantic top-K retrieval. The current `/chat` endpoint
+is not grounded RAG.
 
 ## Run and test
 

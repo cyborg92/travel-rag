@@ -23,7 +23,7 @@ not yet a RAG pipeline:
 - Four synthetic Markdown policy documents are present in `travel_rag/data/policies/`. `travel_rag/app/utils/doc_reader.py` loads sorted filename/text pairs; its test checks the four expected filenames and non-empty content.
 - Day 1 (chat endpoint) and Day 2 (ingestion and chunking) are complete. `travel_rag/app/utils/chunker.py` provides fixed-size character chunks with overlap and heading-based section chunks; records include source, zero-based chunk index, and text, with section heading for heading-based chunks.
 - `GET /chunkertest` displays the section chunks for manual inspection. This is a learning/debug route, not a retrieval endpoint.
-- Day 3 is in progress. `travel_rag/app/embeddings/client.py` calls Ollama's `/api/embed`; the configured model is `nomic-embed-text`. Fake-HTTP tests cover the response and failure cases, but a live embedding request has not been verified.
+- Day 3 is in progress. `travel_rag/app/embeddings/client.py` calls Ollama's `/api/embed`; the configured model is `nomic-embed-text`. Fake-HTTP tests cover response and failure cases, and a live request returned a 768-dimensional vector on November 5, 2026.
 - Route and document-loader behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic API tests.
 - The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic and pydantic-settings are used for API contracts and configuration.
 - Ollama is integrated for chat with `llama3:8b` as the current default model; `nomic-embed-text` is configured for embeddings. No vector store or retrieval has been implemented.
@@ -78,7 +78,7 @@ flowchart TD
 | Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
 | LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
 | Document loading and chunking (`travel_rag/app/utils/`) | Reads sorted Markdown policies and produces fixed-size or heading-based chunk records | Metadata is currently source filename, chunk index, text, and section heading when available |
-| Embeddings (`travel_rag/app/embeddings/`) | Requests one vector from the configured Ollama embedding model | Shared async HTTP client; fake-HTTP tests; live Ollama request pending |
+| Embeddings (`travel_rag/app/embeddings/`) | Requests one vector from the configured Ollama embedding model | Shared async HTTP client; fake-HTTP tests; live Ollama request verified |
 | Ingestion (planned) | Clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
 | Retrieval (planned) | Semantic retrieval first; add BM25/hybrid search at the planned milestone | Evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |
