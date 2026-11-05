@@ -145,8 +145,13 @@ Step 3: Semantic retrieval
 Day 3 started November 4: selected `nomic-embed-text` as the local embedding
 baseline and implemented an Ollama embedding client. Fake-HTTP tests pass, and
 a live request on November 5 returned a 768-dimensional vector. The standalone
-experiment also successfully embedded the selected cabin-baggage section.
-Similarity comparison, Chroma indexing, and semantic retrieval remain.
+experiment embedded a cabin-baggage question and matching/unrelated policy
+sections. Cosine scores were 0.7344 for the baggage section and 0.5550 for
+domestic cancellation fees. This is one comparison, not a threshold or quality
+guarantee. Further cabin-baggage queries also ranked the relevant section
+higher. The current synthetic corpus has no exact policy/fare codes, so use an
+out-of-domain query for the limitation experiment. Chroma indexing and
+semantic retrieval remain.
 Implement:
 Plain Text
 chunks

@@ -199,9 +199,13 @@ trade-off; no retrieval-quality improvement is claimed before retrieval exists.
 **Status (Nov 5): In progress.** Selected `nomic-embed-text` as the local
 embedding baseline and added an Ollama `/api/embed` client with fake-HTTP tests.
 A live request returned a 768-dimensional vector, and a standalone script
-successfully embedded the selected cabin-baggage section. Next, compare query
-and chunk embeddings with cosine similarity, then implement Chroma indexing
-and semantic top-K retrieval.
+embedded a cabin-baggage question and relevant/unrelated sections. Cosine
+similarity was 0.7344 for the matching baggage section and 0.5550 for domestic
+cancellation fees. This single example is not a quality guarantee. Next,
+queries including "What size can my cabin bag for Economy Lite?" also ranked
+the baggage section higher. The corpus has no exact policy/fare codes, so use
+an out-of-domain query to explore the limitation, then implement Chroma
+indexing and semantic top-K retrieval.
 
 **Build**
 - Choose an embedding model and record why in `decisions.md`

@@ -111,6 +111,25 @@ gaps, and the next step. The priority roadmap is
 - The standalone `app/utils/embedding_tester_script.py` now selects the
   cabin-baggage section and successfully passes its text to the live embedding
   client. This verifies chunk-to-embedding flow for one real policy section.
+- Extended the live experiment to embed the question "what cabin baggage can i
+  bring?", the `2. Cabin baggage` section, and the `2. Domestic cancellation
+  fees` section. All vectors had 768 dimensions. The observed cosine
+  similarities to the question were **0.7344** for the relevant baggage
+  section and **0.5550** for the unrelated cancellation section. This is one
+  illustrative ranking result, not a threshold or quality guarantee.
+- Tried two additional baggage queries against the same sections. For
+  "Maximum main-bag dimensions?" the baggage and cancellation scores were
+  **0.7155** and **0.4509**; for the paraphrase "What size can my cabin bag
+  be?" they were **0.7877** and **0.5286**. In each trial the relevant section
+  ranked higher. Since each query is a different vector, these small examples
+  do not establish that one wording is inherently better or provide a
+  production threshold.
+- Added "What size can my cabin bag for Economy Lite?" as another query. The
+  cabin-baggage and domestic-cancellation scores were **0.7757** and
+  **0.5614**, respectively. The relevant section still ranked higher. The
+  current synthetic policy files contain no exact policy/fare identifier
+  codes, so use an out-of-domain query for the next limitation experiment
+  rather than inventing a code example.
 
 ## Not implemented yet
 
@@ -121,11 +140,12 @@ gaps, and the next step. The priority roadmap is
 
 ## Next step
 
-Continue Day 3 by comparing embeddings for one policy-relevant query, a
-matching chunk, and an unrelated chunk using cosine similarity. Then add Chroma
-indexing with stable IDs so rerunning ingestion updates rather than duplicates
-chunks, and implement semantic top-K retrieval. The current `/chat` endpoint
-is not grounded RAG.
+Continue Day 3 by trying an out-of-domain query to observe whether semantic
+similarity still assigns non-zero scores to irrelevant policy sections. The
+current corpus has no exact policy/fare codes for an exact-code experiment.
+Then add Chroma indexing with stable IDs so rerunning ingestion updates rather
+than duplicates chunks, and implement semantic top-K retrieval. The current
+`/chat` endpoint is not grounded RAG.
 
 ## Run and test
 
