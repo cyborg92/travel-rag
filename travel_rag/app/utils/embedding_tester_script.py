@@ -2,16 +2,17 @@ from app.utils.chunker import chunk_section
 from app.utils.doc_reader import load_documents
 from app.embeddings.client import OllamaEmbeddingClient
 from app.config import get_settings
-from app.vector_store.chroma_store import upsert_chunk
+from app.vector_store.chroma_store import upsert_chunk, collection
 import math
 import httpx2, asyncio
 
 async def embedding_test() -> None:
     settings = get_settings()
     docs = load_documents()
-    doc_select=docs[1]
-    chunks = chunk_section(doc_select[1], doc_select[0])
-    chunk_select=chunks[2]
+    chunks=[]
+    for doc_select in docs:
+        doc_chunk = chunk_section(doc_select[1], doc_select[0])
+        chunks.extend(doc_chunk)
     async with httpx2.AsyncClient(
             base_url=settings.ollama_base_url,
             timeout=settings.ollama_timeout_seconds,
@@ -20,8 +21,14 @@ async def embedding_test() -> None:
             http_client,
             settings.ollama_embedding_model,
         )
-        embedding_vector_questions=await embedding_client.embed("What size can my cabin bag for Economy Lite?")
-        embedding_vector = await embedding_client.embed(chunk_select['chunk'])
+        embedding_question = await embedding_client.embed("What is the cabin baggage dimensions for main bag for business class?")
+        for chunk_select in chunks:
+            stored_chunk, embedding_vector = await embedd_and_store_chunk(chunk_select, embedding_client)
+        result_ = find_most_similar_chunk(embedding_question, top_k=3)
+        print(f"Most similar chunks:\n {result_}")
+
+async def embedd_and_store_chunk(chunk_select, embedding_client):
+    embedding_vector = await embedding_client.embed(chunk_select['chunk'])
     stable_id = f"{chunk_select['source']}:{chunk_select['chunk_index']}"
     stored_chunk = upsert_chunk(
         embedding_vector=embedding_vector,
@@ -32,14 +39,17 @@ async def embedding_test() -> None:
             "chunk_index": chunk_select['chunk_index'],
             "section": chunk_select['section'],
         },
+        
     )
+    return stored_chunk, embedding_vector
 
-    print(f"dimensions: {len(embedding_vector)}")
-    print(f"dimensions questions: {len(embedding_vector_questions)}")
-    print(f"similarity between chunk and question: {cosine_similarity(embedding_vector, embedding_vector_questions)}")
-    print(f"stored chunk ID: {stored_chunk['ids'][0]}")
-    print(f"stored metadata: {stored_chunk['metadatas'][0]}")
-    print(f"stored text: {stored_chunk['documents'][0]}")
+def find_most_similar_chunk(embedding_vector, top_k=1):
+    results= collection.query(
+        query_embeddings=embedding_vector,
+        n_results=top_k,
+        include=["metadatas", "documents", "distances"],
+    )
+    return results
 
 def cosine_similarity(vec_a,vec_b):
     """
