@@ -130,6 +130,19 @@ gaps, and the next step. The priority roadmap is
   current synthetic policy files contain no exact policy/fare identifier
   codes, so use an out-of-domain query for the next limitation experiment
   rather than inventing a code example.
+- The user verified a local persistent Chroma client by calling `heartbeat()`
+  and opening/creating the `travel_rag_collection`. This verifies local
+  database access only; no vectors or chunk records have been stored yet.
+- Set the Chroma persistence path relative to `chroma_store.py` under
+  `travel_rag/.chroma_db/`, which is covered by `travel_rag/.gitignore`.
+- Updated the Chroma adapter to `upsert_chunk()`, passing Chroma's `ids`,
+  `documents`, `embeddings`, and `metadatas` arguments. The embedding experiment
+  now stores and reads back the cabin-baggage section using the stable ID
+  `new-baggage-policy.md:2`.
+- Ran `cd travel_rag && ./.venv/bin/python -m app.utils.embedding_tester_script`:
+  the live embedding was 768 dimensions and Chroma returned the stored text and
+  metadata. Re-running the script kept the collection count at **1**, verifying
+  upsert behavior for this chunk. The full suite remains **28 passed**.
 
 ## Not implemented yet
 
@@ -140,12 +153,11 @@ gaps, and the next step. The priority roadmap is
 
 ## Next step
 
-Continue Day 3 by trying an out-of-domain query to observe whether semantic
-similarity still assigns non-zero scores to irrelevant policy sections. The
-current corpus has no exact policy/fare codes for an exact-code experiment.
-Then add Chroma indexing with stable IDs so rerunning ingestion updates rather
-than duplicates chunks, and implement semantic top-K retrieval. The current
-`/chat` endpoint is not grounded RAG.
+Next, index all policy sections with the same stable-ID scheme and metadata,
+then implement semantic top-K retrieval by embedding the query and passing the
+query vector to Chroma. After retrieval works, try an out-of-domain query to
+observe the limitation of similarity scores. The current `/chat` endpoint is
+not grounded RAG.
 
 ## Run and test
 
