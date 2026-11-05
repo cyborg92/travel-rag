@@ -178,6 +178,12 @@ gaps, and the next step. The priority roadmap is
   source/text labels, preserved result order, and empty search results.
   Verified with `cd travel_rag && ./.venv/bin/python -m pytest
   tests/test_context_builder.py -q`: **2 passed**; `git diff --check` passed.
+- Implemented `app/rag/prompt_builder.py` to combine the question and labeled
+  context with rules for evidence-only answers, `[Source N]` citations,
+  insufficient evidence, and treating retrieved text as untrusted reference
+  material. Added a unit test verifying all required prompt parts are included.
+  Verified with `cd travel_rag && ./.venv/bin/python -m pytest
+  tests/test_prompt_builder.py -q`: **1 passed**; `git diff --check` passed.
 
 ## Not implemented yet
 
@@ -187,12 +193,10 @@ gaps, and the next step. The priority roadmap is
 
 ## Next step
 
-Next, the user will implement a pure prompt-construction helper that combines
-the question and labeled context with explicit grounding, citation,
-insufficient-evidence, and untrusted-document instructions. After review, wire
-retrieval, prompt construction, and the existing chat client into a grounded
-`POST /ask` endpoint. The current `/chat` endpoint remains raw chat and does not
-use retrieved evidence.
+Next, review and validate the prompt builder, then wire query embedding,
+retrieval, context construction, prompt construction, and the existing chat
+client into a grounded `POST /ask` endpoint. The current `/chat` endpoint
+remains raw chat and does not use retrieved evidence.
 
 ## Run and test
 

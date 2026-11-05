@@ -84,7 +84,7 @@ flowchart TD
 | Ingestion (`travel_rag/app/ingestion/indexer.py`) | Embeds chunks and upserts text, vectors, stable IDs, and metadata into Chroma | Re-running the standalone indexing experiment leaves 45 records |
 | Retrieval (`travel_rag/app/retrieval/retriever.py`) | Embeds a query externally and asks Chroma for top-K semantic matches | Currently a standalone experiment; evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |
-| Context builder (`travel_rag/app/rag/context_builder.py`) | Formats ranked retrieval results as ordered source-labeled context | Token budgeting and prompt construction remain to be implemented |
+| Context and prompt builders (`travel_rag/app/rag/`) | Format ranked retrieval results as ordered, source-labeled context and add evidence/citation/untrusted-data instructions | Token budgeting and API integration remain |
 | Tool registry (planned) | Tool schemas, validation, and execution | Reject unknown tools; enforce permissions |
 | Agent loop (planned) | Iterate LLM <-> tools with guards | `MAX_TOOL_CALLS`, deadline, repeat detection |
 | Proposal store (planned) | Holds pending consequential actions | ID, expiry, parameter hash, owner |
