@@ -1,146 +1,130 @@
 # Travel RAG
 
-A Python API project for a travel knowledge assistant. The current version
-provides health routes, a chat endpoint backed by local Ollama, an embedding
-client, and utilities for loading and chunking synthetic Markdown policies.
-Day 2 (ingestion and chunking) is complete. A live `nomic-embed-text`
-embedding request has returned a vector; vector retrieval and grounded answers
-are not yet implemented.
+A hands-on learning project for building a travel-policy assistant with Python,
+FastAPI, Ollama, and Chroma. All policy content is synthetic.
 
-## Current features
+> **Project status:** The API, document loading and chunking, Ollama embedding
+> client, and a single-chunk Chroma storage experiment are implemented. Bulk
+> indexing and semantic retrieval are the next steps. The current `/chat`
+> endpoint is raw chat, not a grounded RAG endpoint.
 
-- `GET /` returns the plain-text message `server is running`.
-- `GET /health` returns `{"status": "ok", "service": "travel-rag"}`.
-- `POST /chat` sends a question to Ollama and returns the answer, request ID,
-  model-call latency, and token usage.
-- Invalid chat requests return HTTP 422; upstream failures return HTTP 502;
-  timeouts return HTTP 504. Errors include the request ID.
-- FastAPI provides interactive API documentation at `/docs`.
-- Four synthetic Markdown policies are in `travel_rag/data/policies/`.
-- `app/utils/doc_reader.py` loads policies as sorted filename/text pairs.
-- `app/utils/chunker.py` provides fixed-size chunks with overlap and
-  heading-based section chunks. Chunk records carry source and index metadata;
-  section chunks also carry their heading.
-- `GET /chunkertest` displays section chunks for manual inspection.
+## What works today
 
-## Technology
-
-| Technology | Use |
+| Area | Current behavior |
 |---|---|
-| Python | Application language |
-| FastAPI | HTTP API framework |
-| Pydantic and pydantic-settings | API validation and environment-based settings |
-| Uvicorn | Local ASGI server |
-| httpx2 | Async HTTP client for Ollama |
-| Ollama | Local chat model (`llama3:8b`) and embedding model (`nomic-embed-text`) runtime |
-| Pytest | Automated tests |
+| `GET /` | Returns `server is running` as plain text. |
+| `GET /health` | Returns a small JSON health response. |
+| `POST /chat` | Sends a question to Ollama and returns the answer, request ID, latency, and token usage. |
+| Policy utilities | Loads four synthetic Markdown policies and creates fixed-size or heading-based chunks. |
+| Embeddings | Calls Ollama with the configured embedding model; a live call returned a 768-dimensional vector. |
+| Chroma experiment | Stores and reads back one chunk in a local persistent collection using `upsert`. |
+| `GET /chunkertest` | Displays policy section chunks for manual inspection. |
 
-Dependencies are listed in [`travel_rag/requirements.txt`](travel_rag/requirements.txt).
-The Ollama embedding client is implemented and has been live-tested with
-`nomic-embed-text`. No vector database is integrated yet.
+Chat validation errors return HTTP 422, Ollama timeouts return 504, and other
+Ollama service errors return 502. These API paths are covered by automated
+tests that use fakes rather than requiring a live Ollama service.
 
-## Project layout
+## How the pieces fit
 
 ```text
-.
-├── README.md
-├── .github/
-│   └── docs/
-│       ├── 14-day-interview-plan.md
-│       ├── ARCHITECTURE.md
-│       └── plan.md
-└── travel_rag/
-    ├── app/
-    │   ├── api/
-    │   │   └── routes.py       # Root, health, chat, and chunk inspection routes
-    │   ├── llm/
-    │   │   └── client.py       # Async Ollama chat client and result types
-    │   ├── embeddings/
-    │   │   └── client.py       # Ollama embedding client
-    │   ├── utils/
-    │   │   ├── chunker.py      # Fixed-size and heading-based chunking
-    │   │   └── doc_reader.py   # Loads Markdown policy documents
-    │   ├── config.py           # Ollama URL, model, and timeout settings
-    │   ├── main.py             # FastAPI app, client lifecycle, request IDs
-    │   └── schemas.py          # Chat request/response contracts
-    ├── tests/
-    │   ├── test_chat.py
-    │   ├── test_chunker.py
-    │   ├── test_doc_reader.py
-    │   ├── test_embeddings.py
-    │   └── test_health.py
-    ├── data/
-    │   └── policies/           # Four synthetic Markdown policy documents
-    ├── requirements.txt
-    └── work-complete.md
+POST /chat ──> FastAPI ──> Ollama chat model
+
+Synthetic policies ──> load and chunk ──> Ollama embeddings ──> Chroma
+                                                               (experiment)
 ```
 
-The [14-day plan](.github/docs/14-day-interview-plan.md) is the priority
-roadmap. The [architecture](.github/docs/ARCHITECTURE.md) describes the target
-design, [decisions](.github/docs/decisions.md) records implementation choices,
-and [work-complete.md](travel_rag/work-complete.md) records verified progress
-and the next step.
+The second flow currently demonstrates storing one selected chunk. It does
+not yet index all policies or search Chroma for relevant chunks.
 
-## Requirements
+## Quickstart
+
+### Requirements
 
 - Python 3.11 or newer
-- `pip`
-- [Ollama](https://ollama.com/) running locally with the configured model
-  available
+- [Ollama](https://ollama.com/) for live chat and embedding requests
 
-## Set up
+### Install dependencies
 
-Run these commands from the `travel_rag/` directory:
+From the repository root:
 
 ```bash
+cd travel_rag
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
 python -m pip install -r requirements.txt
 ```
 
-If you move the project, recreate `.venv` at its new location because virtual
-environment scripts can refer to their original absolute path.
+If you move the project, recreate the virtual environment at its new location:
+virtual-environment scripts can contain the path where the environment was
+originally created.
 
-## Configure Ollama
+### Prepare Ollama models
 
-Defaults:
+For the default configuration, make sure Ollama is running and has these
+models:
 
-| Environment variable | Default |
-|---|---|
-| `TRAVEL_RAG_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` |
-| `TRAVEL_RAG_OLLAMA_MODEL` | `llama3:8b` |
-| `TRAVEL_RAG_OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` |
-| `TRAVEL_RAG_OLLAMA_TIMEOUT_SECONDS` | `60` |
+```bash
+ollama pull llama3:8b
+ollama pull nomic-embed-text
+```
 
-Set `TRAVEL_RAG_OLLAMA_MODEL` to a model tag installed in your Ollama setup if
-you use a different model. The default local Ollama configuration does not
-require an API key.
+The API can start without making a model request, but `/chat` and the embedding
+experiment need Ollama and their respective models to be available.
 
-## Run the API
+### Start the API
 
-From `travel_rag/`, with the virtual environment activated:
+From `travel_rag/` with the virtual environment activated:
 
 ```bash
 uvicorn app.main:app --reload
 ```
 
-Open [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs) to try the API.
-The OpenAPI schema is at
-[http://127.0.0.1:8000/openapi.json](http://127.0.0.1:8000/openapi.json).
+- Interactive API docs: [http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
+- Health check: [http://127.0.0.1:8000/health](http://127.0.0.1:8000/health)
 
-Example chat request:
+Stop the server with `Ctrl+C`.
+
+## Try the chat endpoint
 
 ```bash
 curl -X POST http://127.0.0.1:8000/chat \
   -H 'Content-Type: application/json' \
-  -d '{"question":"Reply with the single word hello."}'
+  -d '{"question":"What does the policy say about cabin baggage?"}'
 ```
 
-The response contains `answer`, `request_id`, `latency_ms`, and `token_usage`.
-The same request ID is also returned in the `X-Request-ID` response header.
+The JSON response contains `answer`, `request_id`, `latency_ms`, and
+`token_usage`. The request ID is also returned in the `X-Request-ID` header.
+Because this endpoint does not retrieve policy documents, its answer is not
+grounded in the synthetic policy corpus.
 
-Stop the server with `Ctrl+C`.
+## Configuration
+
+Settings use the `TRAVEL_RAG_` environment-variable prefix.
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `TRAVEL_RAG_OLLAMA_BASE_URL` | `http://127.0.0.1:11434` | Ollama server URL |
+| `TRAVEL_RAG_OLLAMA_MODEL` | `llama3:8b` | Chat model |
+| `TRAVEL_RAG_OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
+| `TRAVEL_RAG_OLLAMA_TIMEOUT_SECONDS` | `60` | Outbound Ollama request timeout |
+
+For example, set `TRAVEL_RAG_OLLAMA_MODEL` to a model tag installed in your
+Ollama setup to use a different chat model.
+
+## Run the embedding and Chroma experiment
+
+From `travel_rag/`:
+
+```bash
+./.venv/bin/python -m app.utils.embedding_tester_script
+```
+
+The script embeds a selected policy section and a question, compares their
+vectors, stores the section in the local Chroma collection, and reads it back.
+The Chroma database is written to `travel_rag/.chroma_db/`, which is ignored by
+Git. This is a learning experiment, not yet a full-corpus ingestion or
+retrieval command.
 
 ## Run the tests
 
@@ -150,24 +134,17 @@ From `travel_rag/`:
 python -m pytest -q
 ```
 
-The tests use FastAPI's in-process `TestClient` and a fake chat client. They
-cover route behavior, request validation, request IDs, timeouts, and upstream
-failures without needing a running Ollama server.
+The automated tests use fake clients for model calls, so they do not require a
+running Ollama service.
 
-## Request flow
+## Roadmap
 
-1. Uvicorn serves the FastAPI application at `app.main:app`.
-2. FastAPI middleware assigns a request ID. The app lifespan creates one shared
-   async HTTP client for Ollama and closes it at shutdown.
-3. FastAPI validates the JSON body as a `ChatRequest`.
-4. The `/chat` handler calls the Ollama client, measures the call, and returns a
-   typed `ChatResponse`; FastAPI serializes it as JSON.
-5. Tests replace the Ollama client with a fake to verify API behavior
-   deterministically.
+- **Complete:** FastAPI chat endpoint and synthetic policy loading/chunking.
+- **In progress:** Embeddings and vector storage.
+- **Next:** Index all policy sections, retrieve top-K matches from Chroma, then
+  build a grounded answer flow with citations.
 
-## Planned direction
-
-Day 1 (FastAPI and first LLM endpoint) and Day 2 (ingestion and chunking) are
-complete. Day 3 is in progress: the Ollama embedding client is configured for
-`nomic-embed-text` and covered with fake-HTTP tests. Chroma, vector search,
-grounded answers, evaluation, and tool/agent flows remain future work.
+See the [priority interview plan](.github/docs/14-day-interview-plan.md),
+[target architecture](.github/docs/ARCHITECTURE.md),
+[implementation decisions](.github/docs/decisions.md), and
+[verified progress checkpoint](travel_rag/work-complete.md).
