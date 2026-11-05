@@ -14,10 +14,14 @@ gaps, and the next step. The priority roadmap is
   loaded and chunked with fixed-size/overlap and heading-based strategies.
   Chunk records carry source, zero-based index, text, and section when
   structure-aware chunking is used.
-- **Day 3 (embeddings + vector store): in progress.** The Ollama embedding
-  client is configured for `nomic-embed-text`, passed fake-HTTP tests, and
-  returned a 768-dimensional vector in a live call. Chroma indexing and
-  semantic retrieval remain.
+- **Day 3 (embeddings + vector store): complete.** The Ollama embedding client
+  passed fake-HTTP tests and returned a 768-dimensional vector in a live call.
+  The standalone experiment indexes all 45 policy sections in persistent
+  Chroma and retrieves top-K matches. The user observed relevant and
+  out-of-domain query behavior; distances are not treated as confidence scores.
+- **Day 4 (complete RAG): in progress.** Next is context construction, then a
+  grounded `POST /ask` endpoint with citations and insufficient-evidence
+  behavior.
 
 ## Work completed and verified
 
@@ -143,21 +147,43 @@ gaps, and the next step. The priority roadmap is
   the live embedding was 768 dimensions and Chroma returned the stored text and
   metadata. Re-running the script kept the collection count at **1**, verifying
   upsert behavior for this chunk. The full suite remains **28 passed**.
+- On November 5, reorganized the application by responsibility:
+  - Split API endpoints into `app/api/routes/chat.py` and
+    `app/api/routes/operations.py`, composed by `app/api/routes/__init__.py`.
+  - Moved document loading and chunking into `app/ingestion/`.
+  - Extracted reusable embedding/upsert and vector-query operations into
+    `app/ingestion/indexer.py` and `app/retrieval/retriever.py`.
+  - Moved the experiment runner to `scripts/embedding_tester_script.py`; it
+    coordinates indexing, query embedding, retrieval, and result display.
+  - Updated application/test imports and project documentation to match.
+- Verified the reorganized live experiment twice with
+  `cd travel_rag && ./.venv/bin/python -m scripts.embedding_tester_script`.
+  Each run indexed **45** sections, reported collection count **45**, and
+  retrieved `new-baggage-policy.md:2` (`2. Cabin baggage`) as the top match
+  for the cabin-baggage query. The repeat run confirms the existing records
+  were updated rather than duplicated.
+- Added offline unit tests for the indexer and retriever. Verified with
+  `cd travel_rag && ./.venv/bin/python -m pytest -q`: **30 passed**, with one
+  upstream Chroma deprecation warning. `git diff --check` passed.
+- The user also tried an out-of-domain capital-city question. Chroma returned
+  policy chunks anyway, with a top distance around **1.056**, compared with
+  around **0.400** for a cabin-baggage question. These few observations
+  illustrate nearest-neighbor behavior only and do not establish a reliable
+  refusal threshold.
 
 ## Not implemented yet
 
-- Chroma indexing and semantic retrieval.
 - Grounded `/ask` answers, citations, and retrieval evaluation.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
 ## Next step
 
-Next, index all policy sections with the same stable-ID scheme and metadata,
-then implement semantic top-K retrieval by embedding the query and passing the
-query vector to Chroma. After retrieval works, try an out-of-domain query to
-observe the limitation of similarity scores. The current `/chat` endpoint is
-not grounded RAG.
+For Day 4, the user will implement a pure context-formatting helper that turns
+the top retrieved chunks into ordered, labeled evidence with source and section
+details. Review that attempt, add focused tests, then wire retrieval and the
+context into a grounded `POST /ask` flow. The current `/chat` endpoint remains
+raw chat and does not use retrieved evidence.
 
 ## Run and test
 

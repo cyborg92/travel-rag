@@ -1,22 +1,11 @@
 from time import perf_counter
-from typing import Literal
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import PlainTextResponse
-from pydantic import BaseModel
 
 from app.llm.client import ChatClient, ChatServiceError, ChatTimeoutError
 from app.schemas import ChatRequest, ChatResponse, TokenUsage
 
-from app.utils.doc_reader import load_documents
-from app.utils.chunker import chunk_text, chunk_section
-
 router = APIRouter()
-
-
-@router.get("/", tags=["operations"])
-def root() -> PlainTextResponse:
-    return PlainTextResponse("server is running")
 
 
 def get_chat_client(request: Request) -> ChatClient:
@@ -54,24 +43,3 @@ async def chat(
             completion_tokens=result.completion_tokens,
         ),
     )
-
-
-class HealthResponse(BaseModel):
-    status: Literal["ok"]
-    service: str
-
-
-@router.get("/health", response_model=HealthResponse, tags=["operations"])
-def health_check() -> HealthResponse:
-    return HealthResponse(status="ok", service="travel-rag")
-
-@router.get("/chunkertest", tags=["operations"])
-def chunker_test() -> PlainTextResponse:
-    docs = load_documents()
-    chunk_details = []
-    for filename, text in docs:
-        chunks = chunk_section(text, filename)
-        chunk_details.append(f"{filename}: {len(chunks)} chunks")
-        for index, chunk in enumerate(chunks, start=1):
-            chunk_details.append(f"Chunk {index}:\n{chunk}")
-    return PlainTextResponse("\n".join(chunk_details))

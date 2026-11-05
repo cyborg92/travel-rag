@@ -3,10 +3,10 @@
 A hands-on learning project for building a travel-policy assistant with Python,
 FastAPI, Ollama, and Chroma. All policy content is synthetic.
 
-> **Project status:** The API, document loading and chunking, Ollama embedding
-> client, and a single-chunk Chroma storage experiment are implemented. Bulk
-> indexing and semantic retrieval are the next steps. The current `/chat`
-> endpoint is raw chat, not a grounded RAG endpoint.
+> **Project status:** The API, policy ingestion/chunking, Ollama embedding
+> client, full-corpus Chroma indexing, and top-K semantic retrieval experiment
+> are implemented. The current `/chat` endpoint is raw chat, not a grounded
+> RAG endpoint; context construction and `/ask` are next.
 
 ## What works today
 
@@ -17,7 +17,7 @@ FastAPI, Ollama, and Chroma. All policy content is synthetic.
 | `POST /chat` | Sends a question to Ollama and returns the answer, request ID, latency, and token usage. |
 | Policy utilities | Loads four synthetic Markdown policies and creates fixed-size or heading-based chunks. |
 | Embeddings | Calls Ollama with the configured embedding model; a live call returned a 768-dimensional vector. |
-| Chroma experiment | Stores and reads back one chunk in a local persistent collection using `upsert`. |
+| Chroma experiment | Indexes policy sections in a local persistent collection using stable IDs and `upsert`, then retrieves top-K matches. |
 | `GET /chunkertest` | Displays policy section chunks for manual inspection. |
 
 Chat validation errors return HTTP 422, Ollama timeouts return 504, and other
@@ -29,12 +29,12 @@ tests that use fakes rather than requiring a live Ollama service.
 ```text
 POST /chat ──> FastAPI ──> Ollama chat model
 
-Synthetic policies ──> load and chunk ──> Ollama embeddings ──> Chroma
-                                                               (experiment)
+Synthetic policies ──> ingestion ──> Ollama embeddings ──> Chroma
+Question ──> Ollama embedding ──> top-K Chroma retrieval
 ```
 
-The second flow currently demonstrates storing one selected chunk. It does
-not yet index all policies or search Chroma for relevant chunks.
+The retrieval flow is currently exercised by a standalone script. `/chat` does
+not yet use retrieved policy context.
 
 ## Quickstart
 
@@ -117,14 +117,17 @@ Ollama setup to use a different chat model.
 From `travel_rag/`:
 
 ```bash
-./.venv/bin/python -m app.utils.embedding_tester_script
+python -m scripts.embedding_tester_script
 ```
 
-The script embeds a selected policy section and a question, compares their
-vectors, stores the section in the local Chroma collection, and reads it back.
-The Chroma database is written to `travel_rag/.chroma_db/`, which is ignored by
-Git. This is a learning experiment, not yet a full-corpus ingestion or
-retrieval command.
+The script loads and chunks all policy documents, embeds and upserts the
+sections, embeds a sample question, and prints its top three matches with
+metadata and distances. Re-running it uses the same IDs and updates existing
+records rather than adding duplicates. Chroma persists its database in
+`travel_rag/.chroma_db/`, which is ignored by Git.
+
+The script is an experiment runner; reusable indexing and retrieval operations
+live under `app/ingestion/` and `app/retrieval/`.
 
 ## Run the tests
 
@@ -140,9 +143,9 @@ running Ollama service.
 ## Roadmap
 
 - **Complete:** FastAPI chat endpoint and synthetic policy loading/chunking.
-- **In progress:** Embeddings and vector storage.
-- **Next:** Index all policy sections, retrieve top-K matches from Chroma, then
-  build a grounded answer flow with citations.
+- **In progress:** Complete RAG: build a bounded context from retrieved chunks,
+  add a grounding prompt, and expose `POST /ask` with citations and insufficient
+  evidence behavior.
 
 See the [priority interview plan](.github/docs/14-day-interview-plan.md),
 [target architecture](.github/docs/ARCHITECTURE.md),

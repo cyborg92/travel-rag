@@ -1,5 +1,6 @@
 import re
 
+
 def chunk_text(
     text: str,
     chunk_size: int = 1000,
@@ -24,7 +25,7 @@ def chunk_text(
         raise ValueError("overlap must be a non-negative integer.")
     if overlap >= chunk_size:
         raise ValueError("overlap must be less than chunk_size.")
-    chunks: list[str] = []
+    chunks: list[dict] = []
     start = 0
     text_length = len(text)
     while start < text_length:
@@ -42,7 +43,8 @@ def chunk_text(
         start += chunk_size - overlap
     return chunks
 
-def chunk_section(text, filename: str = "unknown") -> list[dict]:
+
+def chunk_section(text: str, filename: str = "unknown") -> list[dict]:
     """
     Split a document into sections based on a heading pattern.
 
@@ -54,7 +56,7 @@ def chunk_section(text, filename: str = "unknown") -> list[dict]:
         The resulting text sections.
     """
     sections = re.split(r"(?m)(?=^## )", text)
-    
+
     results = []
     for section in sections:
         if section.strip():

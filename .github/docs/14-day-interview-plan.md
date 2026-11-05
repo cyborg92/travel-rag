@@ -1,9 +1,9 @@
 My 14-Day SDE-4 AI Interview Plan
-Progress as of November 5: Day 1 (FastAPI + first LLM endpoint) and Day 2
-(synthetic document ingestion and chunking) are complete. Day 3 (embeddings
-and vector DB) is in progress: the Ollama embedding client passed fake-HTTP
-tests and returned a 768-dimensional vector in a live `nomic-embed-text`
-request. Similarity comparison and vector storage remain. See
+Progress as of November 5: Days 1-3 are complete. Day 3's Ollama embedding
+client passed fake-HTTP tests and returned a 768-dimensional vector in a live
+`nomic-embed-text` request; full-corpus Chroma indexing and top-K semantic
+retrieval were exercised by the standalone experiment. Day 4 (complete RAG) is
+in progress. See
 `../../travel_rag/work-complete.md` for verified details and validation
 results.
 
@@ -142,16 +142,19 @@ Find at least one concrete example where a bad chunking strategy separates an ex
 The interview lesson is:
 Chunking isn't merely preprocessing. It changes what evidence retrieval can return and therefore directly affects answer quality.
 Step 3: Semantic retrieval
-Day 3 started November 4: selected `nomic-embed-text` as the local embedding
+Day 3 completed November 5: selected `nomic-embed-text` as the local embedding
 baseline and implemented an Ollama embedding client. Fake-HTTP tests pass, and
 a live request on November 5 returned a 768-dimensional vector. The standalone
 experiment embedded a cabin-baggage question and matching/unrelated policy
 sections. Cosine scores were 0.7344 for the baggage section and 0.5550 for
 domestic cancellation fees. This is one comparison, not a threshold or quality
-guarantee. Further cabin-baggage queries also ranked the relevant section
-higher. The current synthetic corpus has no exact policy/fare codes, so use an
-out-of-domain query for the limitation experiment. Chroma indexing and
-semantic retrieval remain.
+guarantee. The standalone script now indexes all 45 sections in persistent
+Chroma and retrieves top-K results using a query embedding. A cabin-baggage
+query returned the expected section first; an unrelated capital-city query
+still returned nearest policy chunks at a larger distance. This demonstrates
+nearest-neighbor behavior, not a calibrated refusal threshold. The experiment
+is not yet integrated into an API answer flow. The user reports understanding
+the core embedding, top-K, and nearest-neighbor limitation concepts.
 Implement:
 Plain Text
 chunks

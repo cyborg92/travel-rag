@@ -3,7 +3,7 @@ from collections.abc import Iterator
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api.routes import get_chat_client
+from app.api.routes.chat import get_chat_client
 from app.llm.client import ChatResult, ChatServiceError, ChatTimeoutError
 from app.main import app
 

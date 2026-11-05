@@ -117,7 +117,7 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 
 - [x] Day 1: FastAPI + first LLM endpoint
 - [x] Day 2: Ingestion + chunking (Nov 4)
-- [ ] Day 3: Embeddings + vector DB (in progress, Nov 4)
+- [x] Day 3: Embeddings + vector DB (Nov 5)
 - [ ] Day 4: Complete RAG
 - [ ] Day 5: Break and evaluate RAG
 - [ ] Day 6: Improve retrieval
@@ -196,22 +196,28 @@ trade-off; no retrieval-quality improvement is claimed before retrieval exists.
 ### Day 3: Embeddings and vector database
 **Objective:** Chunks -> embeddings -> vector store; query -> top-K.
 
-**Status (Nov 5): In progress.** Selected `nomic-embed-text` as the local
+**Status (Nov 5): Complete.** Selected `nomic-embed-text` as the local
 embedding baseline and added an Ollama `/api/embed` client with fake-HTTP tests.
 A live request returned a 768-dimensional vector, and a standalone script
 embedded a cabin-baggage question and relevant/unrelated sections. Cosine
 similarity was 0.7344 for the matching baggage section and 0.5550 for domestic
 cancellation fees. This single example is not a quality guarantee. Next,
 queries including "What size can my cabin bag for Economy Lite?" also ranked
-the baggage section higher. The corpus has no exact policy/fare codes, so use
-an out-of-domain query to explore the limitation, then implement Chroma
-indexing and semantic top-K retrieval.
+the baggage section higher. The standalone script now indexes all 45 policy
+sections in Chroma and performs top-K retrieval. Cabin-baggage queries ranked
+the expected section first; an out-of-domain query still returned nearest
+policy matches at a larger distance. These observations are not a calibrated
+threshold or a quality guarantee. Retrieval is not yet connected to an API
+answer flow. The user reports understanding the core embedding, top-K, and
+nearest-neighbor limitation concepts.
 
 **Build**
 - Choose an embedding model and record why in `decisions.md`
 - Choose a vector store (Chroma for speed; note pgvector/Qdrant trade-offs)
-- Idempotent indexing (re-running ingestion must not duplicate chunks)
-- Query function returning chunk text, score, metadata
+- Idempotent indexing (re-running ingestion must not duplicate chunks) —
+  exercised with 45 chunks
+- Query function returning chunk text, distance, metadata — exercised in the
+  standalone script
 - Hand-compute cosine similarity for 2 vectors to demystify it
 
 **Break it**

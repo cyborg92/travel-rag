@@ -1,4 +1,4 @@
-from app.utils.doc_reader import load_documents
+from app.ingestion.doc_reader import load_documents
 
 
 def test_load_documents_returns_all_policy_markdown_files() -> None:

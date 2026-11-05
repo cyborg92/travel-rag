@@ -14,20 +14,22 @@ Non-goals: model training, fine-tuning, multi-agent frameworks, production deplo
 
 ## Current implementation and technology
 
-The current checkpoint provides basic API routes and a chat endpoint, but is
-not yet a RAG pipeline:
+The current checkpoint provides basic API routes, a raw chat endpoint, and
+standalone indexing/retrieval experiments. The retrieval path is not yet wired
+to an API answer flow:
 
 - The application lives in `travel_rag/app/`; `travel_rag/app/main.py` creates the FastAPI app and includes the router.
-- `travel_rag/app/api/routes.py` provides `GET /`, `GET /health`, and `POST /chat`.
+- `travel_rag/app/api/routes/` separates operations and chat routes. It provides `GET /`, `GET /health`, `GET /chunkertest`, and `POST /chat`.
 - The chat route validates requests, calls a shared async Ollama client, and returns the answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to HTTP 422, 502, and 504.
-- Four synthetic Markdown policy documents are present in `travel_rag/data/policies/`. `travel_rag/app/utils/doc_reader.py` loads sorted filename/text pairs; its test checks the four expected filenames and non-empty content.
-- Day 1 (chat endpoint) and Day 2 (ingestion and chunking) are complete. `travel_rag/app/utils/chunker.py` provides fixed-size character chunks with overlap and heading-based section chunks; records include source, zero-based chunk index, and text, with section heading for heading-based chunks.
+- Four synthetic Markdown policy documents are present in `travel_rag/data/policies/`. `travel_rag/app/ingestion/doc_reader.py` loads sorted filename/text pairs; `travel_rag/app/ingestion/chunker.py` provides fixed-size character chunks and heading-based section chunks.
+- Day 1 (chat endpoint) and Day 2 (ingestion and chunking) are complete. Chunk records include source, zero-based chunk index, and text, with a section heading for heading-based chunks.
 - `GET /chunkertest` displays the section chunks for manual inspection. This is a learning/debug route, not a retrieval endpoint.
-- Day 3 is in progress. `travel_rag/app/embeddings/client.py` calls Ollama's `/api/embed`; the configured model is `nomic-embed-text`. Fake-HTTP tests cover response and failure cases, and a live request returned a 768-dimensional vector on November 5, 2026.
+- Day 3 is complete. `travel_rag/app/embeddings/client.py` calls Ollama's `/api/embed`; the configured model is `nomic-embed-text`. Fake-HTTP tests cover response and failure cases, and a live request returned a 768-dimensional vector on November 5, 2026.
+- `travel_rag/app/ingestion/indexer.py` embeds and upserts policy sections to the persistent Chroma collection; `travel_rag/app/retrieval/retriever.py` performs top-K queries. The standalone runner at `travel_rag/scripts/embedding_tester_script.py` indexed 45 sections and retrieved the relevant baggage section first in a live experiment on November 5, 2026.
 - Route and document-loader behavior is covered by pytest tests under `travel_rag/tests/`, using a fake chat client for deterministic API tests.
 - The current declared packages are listed in `travel_rag/requirements.txt`. Pydantic and pydantic-settings are used for API contracts and configuration.
-- Ollama is integrated for chat with `llama3:8b` as the current default model; `nomic-embed-text` is configured for embeddings. No vector store or retrieval has been implemented.
-- No vector store, ingestion pipeline, retrieval layer, agent, or orchestration framework is currently implemented.
+- Ollama is integrated for chat with `llama3:8b` as the current default model; `nomic-embed-text` is configured for embeddings. Chroma indexing and semantic retrieval are exercised by the standalone experiment, but not yet used to ground an API response.
+- Context construction, `POST /ask`, retrieval evaluation, tool calling, agent flows, and orchestration frameworks are not implemented.
 
 The planned learning stack is Python + FastAPI/Pydantic, local Ollama for chat
 and embeddings, Chroma as the initial vector store, and pytest. The roadmap
@@ -49,10 +51,10 @@ Day 9 before considering a framework.
 ## 3. System context
 
 The diagram below is the planned end state, not the current runtime path.
-Today, requests go through Uvicorn to FastAPI; `/chat` calls local Ollama,
-while the root and health routes remain simple. The four policy files can be
-loaded and chunked for inspection. Embeddings, vector retrieval, grounded RAG,
-and tool calling are not implemented.
+Today, requests go through Uvicorn to FastAPI; `/chat` calls local Ollama
+without retrieval. The standalone experiment loads and chunks policies,
+embeds them, stores them in Chroma, and retrieves nearest chunks. Grounded
+answers and tool calling are not implemented.
 
 ```mermaid
 flowchart TD
@@ -77,10 +79,10 @@ flowchart TD
 | API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: root, health, and chat routes. | Pydantic validates chat input and response; auth is not implemented |
 | Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
 | LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
-| Document loading and chunking (`travel_rag/app/utils/`) | Reads sorted Markdown policies and produces fixed-size or heading-based chunk records | Metadata is currently source filename, chunk index, text, and section heading when available |
+| Document loading and chunking (`travel_rag/app/ingestion/`) | Reads sorted Markdown policies and produces fixed-size or heading-based chunk records | Metadata is currently source filename, chunk index, text, and section heading when available |
 | Embeddings (`travel_rag/app/embeddings/`) | Requests one vector from the configured Ollama embedding model | Shared async HTTP client; fake-HTTP tests; live Ollama request verified |
-| Ingestion (planned) | Clean, chunk, attach metadata, embed, and index | Make indexing repeatable and versioned |
-| Retrieval (planned) | Semantic retrieval first; add BM25/hybrid search at the planned milestone | Evaluate rather than assume quality |
+| Ingestion (`travel_rag/app/ingestion/indexer.py`) | Embeds chunks and upserts text, vectors, stable IDs, and metadata into Chroma | Re-running the standalone indexing experiment leaves 45 records |
+| Retrieval (`travel_rag/app/retrieval/retriever.py`) | Embeds a query externally and asks Chroma for top-K semantic matches | Currently a standalone experiment; evaluate rather than assume quality |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |
 | Context builder (planned) | Select, order, label, and budget chunks | Controls prompt size and citation labels |
 | Tool registry (planned) | Tool schemas, validation, and execution | Reject unknown tools; enforce permissions |

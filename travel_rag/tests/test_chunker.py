@@ -1,6 +1,6 @@
 import pytest
 
-from app.utils.chunker import chunk_section, chunk_text
+from app.ingestion.chunker import chunk_section, chunk_text
 
 
 def test_chunk_text_splits_with_character_overlap() -> None:
