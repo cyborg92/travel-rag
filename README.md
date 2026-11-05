@@ -6,7 +6,8 @@ FastAPI, Ollama, and Chroma. All policy content is synthetic.
 > **Project status:** The API, policy ingestion/chunking, Ollama embedding
 > client, full-corpus Chroma indexing, and top-K semantic retrieval experiment
 > are implemented. The current `/chat` endpoint is raw chat, not a grounded
-> RAG endpoint; context construction and `/ask` are next.
+> RAG endpoint; retrieved chunks can now be formatted as labeled context, while
+> prompt construction and `/ask` are next.
 
 ## What works today
 
@@ -142,10 +143,11 @@ running Ollama service.
 
 ## Roadmap
 
-- **Complete:** FastAPI chat endpoint and synthetic policy loading/chunking.
-- **In progress:** Complete RAG: build a bounded context from retrieved chunks,
-  add a grounding prompt, and expose `POST /ask` with citations and insufficient
-  evidence behavior.
+- **Complete:** FastAPI chat endpoint, synthetic policy loading/chunking, and
+  Day 3 embedding/Chroma indexing and top-K retrieval experiment.
+- **In progress:** Complete RAG: add grounding prompt instructions and expose
+  `POST /ask` with citations and insufficient-evidence behavior. A helper now
+  formats ranked retrieval results as source-labeled context.
 
 See the [priority interview plan](.github/docs/14-day-interview-plan.md),
 [target architecture](.github/docs/ARCHITECTURE.md),

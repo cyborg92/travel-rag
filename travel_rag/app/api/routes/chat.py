@@ -43,3 +43,11 @@ async def chat(
             completion_tokens=result.completion_tokens,
         ),
     )
+
+@router.get("/ask", tags=["chat"])
+async def ask(
+    question: str,
+    request: Request,
+    chat_client: ChatClient = Depends(get_chat_client),
+) -> ChatResponse:
+    {}

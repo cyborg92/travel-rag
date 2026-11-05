@@ -9,6 +9,7 @@ from app.ingestion.doc_reader import load_documents
 from app.ingestion.indexer import index_chunks
 from app.retrieval.retriever import find_most_similar_chunks
 from app.vector_store.chroma_store import collection
+from app.rag.context_builder import builder_context
 
 QUESTION = "What is the cabin baggage dimensions for main bag for business class?"
 
@@ -35,6 +36,8 @@ async def embedding_test() -> None:
 
         query_embedding = await embedding_client.embed(QUESTION)
         results = find_most_similar_chunks(query_embedding, top_k=3)
+        context_builder_results = builder_context(results)
+        print(f"Context builder results:\n{context_builder_results}")
 
     for rank, (chunk_id, document, metadata, distance) in enumerate(
         zip(

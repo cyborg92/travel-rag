@@ -170,6 +170,14 @@ gaps, and the next step. The priority roadmap is
   around **0.400** for a cabin-baggage question. These few observations
   illustrate nearest-neighbor behavior only and do not establish a reliable
   refusal threshold.
+- Added `app/rag/context_builder.py` to convert Chroma's already-ranked,
+  nested result lists into source-labeled context while preserving retrieval
+  order. The user's live output included the cabin-baggage section and its
+  infant exception. This formats evidence; it does not rank or filter it.
+- Corrected the context label's `ID::` punctuation and added focused tests for
+  source/text labels, preserved result order, and empty search results.
+  Verified with `cd travel_rag && ./.venv/bin/python -m pytest
+  tests/test_context_builder.py -q`: **2 passed**; `git diff --check` passed.
 
 ## Not implemented yet
 
@@ -179,11 +187,12 @@ gaps, and the next step. The priority roadmap is
 
 ## Next step
 
-For Day 4, the user will implement a pure context-formatting helper that turns
-the top retrieved chunks into ordered, labeled evidence with source and section
-details. Review that attempt, add focused tests, then wire retrieval and the
-context into a grounded `POST /ask` flow. The current `/chat` endpoint remains
-raw chat and does not use retrieved evidence.
+Next, the user will implement a pure prompt-construction helper that combines
+the question and labeled context with explicit grounding, citation,
+insufficient-evidence, and untrusted-document instructions. After review, wire
+retrieval, prompt construction, and the existing chat client into a grounded
+`POST /ask` endpoint. The current `/chat` endpoint remains raw chat and does not
+use retrieved evidence.
 
 ## Run and test
 
