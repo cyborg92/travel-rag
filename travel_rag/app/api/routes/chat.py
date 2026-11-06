@@ -64,7 +64,7 @@ async def ask(
 
     try:
         embedded_question_vector = await embedding_client.embed(chat_request.question)
-        top_matching_results = find_most_similar_chunks(embedded_question_vector, top_k=3)
+        top_matching_results = find_most_similar_chunks(embedded_question_vector, top_k=10)
         if top_matching_results["ids"][0] == []:
             return AskResponse(
                     answer="not enough policy evidence to answer that",

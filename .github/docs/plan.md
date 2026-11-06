@@ -118,8 +118,11 @@ Paths such as `app/`, `data/`, `eval/`, and `tests/` in the milestones are relat
 - [x] Day 1: FastAPI + first LLM endpoint
 - [x] Day 2: Ingestion + chunking (Nov 4)
 - [x] Day 3: Embeddings + vector DB (Nov 5)
-- [ ] Day 4: Complete RAG
-- [ ] Day 5: Break and evaluate RAG
+- [ ] Day 4: Complete RAG (end-to-end path implemented; edge-case validation
+  remains)
+- [ ] Day 5: Break and evaluate RAG (in progress: five-case seed dataset is
+  in place; implement evaluation and expand toward the priority roadmap's
+  12-15 cases)
 - [ ] Day 6: Improve retrieval
 - [ ] Day 7: Productionize RAG
 - [ ] Day 8: Tool calling
@@ -254,7 +257,7 @@ nearest-neighbor limitation concepts.
 **Objective:** First evaluation dataset; separate retrieval quality from generation quality.
 
 **Build**
-- `eval/datasets/rag_v1.jsonl` with ~20 questions across: direct, paraphrased, partial, multi-chunk, unanswerable. Each has `expected_chunk_ids` and a reference answer or rubric
+- `eval/datasets/rag_v1.jsonl` with 12-15 questions across: direct, paraphrased, partial, multi-chunk, unanswerable. Each has `expected_chunk_ids` and a reference answer or rubric. Start with the five seed cases currently authored.
 - Retrieval metrics: Hit@K, Precision@K, Recall@K, MRR
 - Generation checks: correct / relevant / grounded (start manual, then LLM-as-judge with a rubric; note judge bias)
 - Failure triage table: "retrieval miss" vs "retrieved but ignored" vs "hallucinated" vs "over-refused"

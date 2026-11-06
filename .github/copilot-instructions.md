@@ -22,12 +22,12 @@
 ## Stack: implemented versus planned
 - Currently implemented: Python, FastAPI, Pydantic, pydantic-settings, Uvicorn, httpx2, Chroma, and pytest. Routes are `GET /`, `GET /health`, `GET /chunkertest`, `POST /chat`, and `POST /ask`; route modules live under `travel_rag/app/api/routes/`.
 - `/chat` calls the local Ollama chat API (default model `llama3:8b`) with a shared async HTTP client created and closed by the FastAPI lifespan.
-- `/ask` embeds the question, retrieves up to three Chroma results, builds source-labeled context and a grounding prompt, then calls the chat client. It maps answer `[Source N]` labels to Chroma IDs and metadata, returns all matches under `retrieved`, and refuses before the model call when retrieval is empty.
+- `/ask` embeds the question, retrieves up to three Chroma results, builds source-labeled context and a grounding prompt, then calls the chat client. It maps answer `[Source N]` labels to Chroma IDs and metadata, returns all matches under `retrieved`, refuses before the model call when retrieval is empty, and sets `refused` when the model answer contains the configured insufficient-context phrase. Phrase detection does not independently verify grounding.
 - Chat requests return an answer, request ID, latency, and token counts. Validation, upstream failures, and timeouts map to 422, 502, and 504 respectively.
 - Current dependencies are exactly those in `travel_rag/requirements.txt`. Do not describe planned services or libraries as installed or integrated.
 - Ollama is integrated for chat and embeddings. A standalone experiment indexes policy sections in persistent Chroma; top-K retrieval is also wired into `POST /ask`.
 - Policy loading and chunking live under `travel_rag/app/ingestion/`; reusable indexing and retrieval operations live under `travel_rag/app/ingestion/` and `travel_rag/app/retrieval/`. The experiment runner is `travel_rag/scripts/embedding_tester_script.py`.
-- Next: validate `/ask` against known, unknown, contradictory, and prompt-injection cases. BM25/hybrid retrieval remains planned for the roadmap's retrieval-improvement milestone.
+- Day 5 has a five-case seed dataset in `travel_rag/eval/datasets/rag_v1.jsonl`; the user is implementing the evaluation workflow. Partial evidence has a seed case, while contradictory evidence and prompt injection remain unvalidated. BM25/hybrid retrieval remains planned for the roadmap's retrieval-improvement milestone.
 - Follow the roadmap's framework gate: implement the RAG path and agent loop directly before considering orchestration frameworks; do not add LangChain or LangGraph before Day 9 is complete. A later evaluation or adoption must be justified by the plan.
 - UI, deployment, Docker, and CI are not part of the current checkpoint unless the user asks or the roadmap brings them into scope.
 

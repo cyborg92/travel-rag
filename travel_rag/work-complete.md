@@ -19,9 +19,16 @@ gaps, and the next step. The priority roadmap is
   The standalone experiment indexes all 45 policy sections in persistent
   Chroma and retrieves top-K matches. The user observed relevant and
   out-of-domain query behavior; distances are not treated as confidence scores.
-- **Day 4 (complete RAG): in progress.** Context and prompt builders, the
-  grounded `POST /ask` flow, empty-retrieval refusal, and mapping answer
-  citations to Chroma metadata are implemented. Roadmap behavior checks remain.
+- **Day 4 (complete RAG): implementation in place; behavior validation remains.**
+  `POST /ask` embeds, retrieves, builds labeled context and a grounding prompt,
+  calls the chat model, and maps citations. Known-question citations and an
+  out-of-domain abstention have been manually observed. Partial evidence,
+  contradictory evidence, and prompt injection are not yet evaluated; model
+  abstention is not deterministic.
+- **Day 5 (break and evaluate RAG): in progress.** The user has authored a
+  five-case seed dataset covering direct, paraphrased, multi-chunk, partial,
+  and out-of-domain questions. Building the evaluation workflow and metrics
+  remains the next task.
 
 ## Work completed and verified
 
@@ -199,28 +206,44 @@ gaps, and the next step. The priority roadmap is
   is a model-reported refusal signal, not a guarantee that every unsupported
   answer will be detected or that an answer containing the phrase has no
   unsupported claims.
+- Manually asked `/ask` for the capital of India. Chroma returned three
+  unrelated policy chunks (observed distances approximately 1.056, 1.077, and
+  1.107), while the model answered that the context did not contain the
+  information and declined. The user also observed occasional answers from
+  the model's own knowledge despite the prompt. These examples demonstrate
+  that nearest-neighbor results can exist for an unanswerable question and
+  that prompt-based abstention is not reliable enough to certify grounding.
 - Added formatter tests and `/ask` route tests for citation mapping,
   deduplication, out-of-range references, returning all retrieved matches, and
   refusing without a model call when retrieval is empty. Verified
   `cd travel_rag && .venv/bin/python -m pytest -q
   tests/test_prompt_builder.py tests/test_response_formatter.py tests/test_chat.py`:
   **15 passed** on 2026-11-06; `git diff --check` passed.
-
+- Reviewed `eval/datasets/rag_v1.jsonl`: it now has five unique, valid JSONL
+  cases covering direct, paraphrased, multi-chunk, partial, and out-of-domain
+  questions. Corrected the partial case to `answerable: true` because one
+  requested part has supporting evidence; its category and answerable/
+  unanswerable part lists express the partial coverage. Verified all expected
+  chunk IDs exist in the 45-record local Chroma collection.
 ## Not implemented yet
 
-- Roadmap validation of known, unknown, partially covered, contradictory, and
-  prompt-injection cases. Phrase-based `refused` detection remains dependent on
-  the model following the prompt; retrieval evaluation and a refusal threshold
-  are not established.
+- Evaluation runner and retrieval metrics; expansion of the seed set toward
+  12-15 cases; generation quality, refusal-correctness, groundedness, and
+  failure-triage measurements.
+- Contradictory and prompt-injection examples/evaluations. Phrase-based `refused`
+  detection remains dependent on model behavior; no retrieval-based refusal
+  threshold is established.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
 ## Next step
 
-Exercise `/ask` with known and out-of-domain questions, then test partial and
-contradictory evidence and untrusted instructions embedded in retrieved text.
-Do not treat Chroma distance as a refusal threshold without evaluating it.
-`/chat` remains raw chat and does not use retrieved evidence.
+Implement the first retrieval metrics against the five authored cases (Hit@K
+and MRR are a focused starting point), then expand the dataset toward the
+priority roadmap's 12-15 cases. Add generation quality/refusal checks separately
+so retrieval misses can be distinguished from evidence retrieved but ignored
+or over-refused. Do not select a distance-based refusal threshold until it has
+been evaluated. `/chat` remains raw chat and does not use retrieved evidence.
 
 ## Run and test
 

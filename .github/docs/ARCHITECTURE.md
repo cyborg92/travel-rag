@@ -76,15 +76,15 @@ flowchart TD
 
 | Component | Responsibility | Key design notes |
 |---|---|---|
-| API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: root, health, and chat routes. | Pydantic validates chat input and response; auth is not implemented |
+| API layer (`travel_rag/app/main.py`, `travel_rag/app/api/`) | Current: root, health, chat, and `/ask` routes. | Pydantic validates request/response; `/ask` is a semantic top-K RAG baseline; auth is not implemented |
 | Configuration (`travel_rag/app/config.py`) | Typed Ollama URL, model, and timeout settings | Environment prefix is `TRAVEL_RAG_` |
 | LLM client (`travel_rag/app/llm/`) | Async calls to local Ollama, timeouts, errors, and token usage | Shared HTTP client is created and closed in FastAPI lifespan |
 | Document loading and chunking (`travel_rag/app/ingestion/`) | Reads sorted Markdown policies and produces fixed-size or heading-based chunk records | Metadata is currently source filename, chunk index, text, and section heading when available |
 | Embeddings (`travel_rag/app/embeddings/`) | Requests one vector from the configured Ollama embedding model | Shared async HTTP client; fake-HTTP tests; live Ollama request verified |
 | Ingestion (`travel_rag/app/ingestion/indexer.py`) | Embeds chunks and upserts text, vectors, stable IDs, and metadata into Chroma | Re-running the standalone indexing experiment leaves 45 records |
-| Retrieval (`travel_rag/app/retrieval/retriever.py`) | Embeds a query externally and asks Chroma for top-K semantic matches | Currently a standalone experiment; evaluate rather than assume quality |
+| Retrieval (`travel_rag/app/retrieval/retriever.py`) | Embeds a query externally and asks Chroma for top-K semantic matches | Used by both the standalone experiment and `/ask`; BM25/hybrid retrieval and evaluated refusal thresholds are not implemented |
 | Reranker (future/optional) | Re-score top-N candidates | Only add if evaluation justifies latency/cost |
-| Context and prompt builders (`travel_rag/app/rag/`) | Format ranked retrieval results as ordered, source-labeled context and add evidence/citation/untrusted-data instructions | Token budgeting and API integration remain |
+| Context and prompt builders (`travel_rag/app/rag/`) | Format ranked retrieval results as ordered, source-labeled context and add evidence/citation/untrusted-data instructions | Integrated into `/ask`; explicit token budgeting and prompt versioning remain |
 | Tool registry (planned) | Tool schemas, validation, and execution | Reject unknown tools; enforce permissions |
 | Agent loop (planned) | Iterate LLM <-> tools with guards | `MAX_TOOL_CALLS`, deadline, repeat detection |
 | Proposal store (planned) | Holds pending consequential actions | ID, expiry, parameter hash, owner |

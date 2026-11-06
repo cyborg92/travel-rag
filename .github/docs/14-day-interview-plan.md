@@ -1,9 +1,13 @@
 My 14-Day SDE-4 AI Interview Plan
-Progress as of November 5: Days 1-3 are complete. Day 3's Ollama embedding
+Progress as of November 6: Days 1-3 are complete. Day 3's Ollama embedding
 client passed fake-HTTP tests and returned a 768-dimensional vector in a live
 `nomic-embed-text` request; full-corpus Chroma indexing and top-K semantic
-retrieval were exercised by the standalone experiment. Day 4 (complete RAG) is
-in progress. See
+retrieval were exercised by the standalone experiment. The Day 4 `/ask` path
+is implemented; a known question with citations and an out-of-domain
+abstention have been manually observed. Refusal is still prompt-dependent,
+and partial/contradictory evidence and prompt injection remain unvalidated.
+Day 5 is underway: a five-case seed dataset is in place; the evaluation
+workflow and metrics are the next learning task. See
 `../../travel_rag/work-complete.md` for verified details and validation
 results.
 
@@ -218,6 +222,10 @@ Reveal the ambiguity.
 Prompt injection in retrieved documents
 Treat the retrieved document as data, not instructions.
 These behaviors are already explicit security and reliability principles in my architecture.
+The RAG request path and citation mapping are implemented. The known-question
+citation and out-of-domain abstention have been exercised manually, but this
+is not yet repeatable evidence of refusal reliability; Day 5 evaluation will
+cover the remaining edge cases without requiring repeated manual API calls.
 Phase 2: Measure rather than assume
 November 7-8
 Build approximately 12-15 meaningful questions.

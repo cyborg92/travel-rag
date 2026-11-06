@@ -6,8 +6,10 @@ FastAPI, Ollama, and Chroma. All policy content is synthetic.
 > **Project status:** The API, policy ingestion/chunking, Ollama embedding
 > client, full-corpus Chroma indexing, and top-K semantic retrieval are
 > implemented. `POST /ask` wires retrieval, labeled context, a grounding prompt,
-> and chat together. Day 4 remains in progress while known/unknown questions
-> and other roadmap behaviors are validated.
+> and chat together. A known question with citations and an out-of-domain
+> abstention have been manually observed; refusal still depends on model
+> behavior. Day 5 evaluation is next, with partial/contradictory evidence and
+> prompt-injection cases still to validate.
 
 ## What works today
 
@@ -151,10 +153,11 @@ running Ollama service.
 
 - **Complete:** FastAPI chat endpoint, synthetic policy loading/chunking, and
   Day 3 embedding/Chroma indexing and top-K retrieval experiment.
-- **In progress:** Complete RAG: `POST /ask`, grounding instructions,
-  insufficient-evidence behavior, and citation mapping are implemented.
-  Validate known and unknown questions, contradictory evidence, and
-  prompt-injection text as described in the roadmap.
+- **Implemented baseline:** Complete RAG: `POST /ask`, grounding instructions,
+  empty-retrieval handling, refusal signaling, and citation mapping. Model
+  refusal is not deterministic; edge-case behavior remains to be evaluated.
+- **Next:** Day 5 RAG evaluation. A five-case seed dataset is in place; build
+  the evaluation workflow and expand toward the priority roadmap's 12-15 cases.
 
 See the [priority interview plan](.github/docs/14-day-interview-plan.md),
 [target architecture](.github/docs/ARCHITECTURE.md),
