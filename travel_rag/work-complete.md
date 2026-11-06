@@ -1,6 +1,6 @@
 # Travel RAG: Progress checkpoint
 
-Last verified: 2026-11-05
+Last verified: 2026-11-06
 
 This is the project handoff for future chats. It records verified work, current
 gaps, and the next step. The priority roadmap is
@@ -19,9 +19,9 @@ gaps, and the next step. The priority roadmap is
   The standalone experiment indexes all 45 policy sections in persistent
   Chroma and retrieves top-K matches. The user observed relevant and
   out-of-domain query behavior; distances are not treated as confidence scores.
-- **Day 4 (complete RAG): in progress.** Next is context construction, then a
-  grounded `POST /ask` endpoint with citations and insufficient-evidence
-  behavior.
+- **Day 4 (complete RAG): in progress.** Context and prompt builders, the
+  grounded `POST /ask` flow, empty-retrieval refusal, and mapping answer
+  citations to Chroma metadata are implemented. Roadmap behavior checks remain.
 
 ## Work completed and verified
 
@@ -184,19 +184,43 @@ gaps, and the next step. The priority roadmap is
   material. Added a unit test verifying all required prompt parts are included.
   Verified with `cd travel_rag && ./.venv/bin/python -m pytest
   tests/test_prompt_builder.py -q`: **1 passed**; `git diff --check` passed.
+- Updated `app/rag/response_formatter.py` so both `[Source N]` and full
+  `[Source N | ...]` citations map to the Nth Chroma result. Citation IDs,
+  source filenames, sections, and chunk indexes come from Chroma metadata, not
+  model-echoed fields. Duplicate labels are returned once; labels without a
+  corresponding result are omitted. The answer text and full retrieved list
+  remain unchanged.
+- Made the prompt's citation requirement explicit: each factual sentence or
+  bullet must end with the exact `[Source N]` label(s), with a short example.
+  This guides model output but cannot guarantee compliance; the response
+  formatter still returns no citations when the answer contains no valid label.
+- Added an explicit insufficient-context phrase to the prompt and a formatter
+  helper that sets `refused` when that phrase occurs in the model answer. This
+  is a model-reported refusal signal, not a guarantee that every unsupported
+  answer will be detected or that an answer containing the phrase has no
+  unsupported claims.
+- Added formatter tests and `/ask` route tests for citation mapping,
+  deduplication, out-of-range references, returning all retrieved matches, and
+  refusing without a model call when retrieval is empty. Verified
+  `cd travel_rag && .venv/bin/python -m pytest -q
+  tests/test_prompt_builder.py tests/test_response_formatter.py tests/test_chat.py`:
+  **15 passed** on 2026-11-06; `git diff --check` passed.
 
 ## Not implemented yet
 
-- Grounded `/ask` answers, citations, and retrieval evaluation.
+- Roadmap validation of known, unknown, partially covered, contradictory, and
+  prompt-injection cases. Phrase-based `refused` detection remains dependent on
+  the model following the prompt; retrieval evaluation and a refusal threshold
+  are not established.
 - Tool calling, agent flows, human approval, and observability beyond the
   request ID and chat response metrics.
 
 ## Next step
 
-Next, review and validate the prompt builder, then wire query embedding,
-retrieval, context construction, prompt construction, and the existing chat
-client into a grounded `POST /ask` endpoint. The current `/chat` endpoint
-remains raw chat and does not use retrieved evidence.
+Exercise `/ask` with known and out-of-domain questions, then test partial and
+contradictory evidence and untrusted instructions embedded in retrieved text.
+Do not treat Chroma distance as a refusal threshold without evaluating it.
+`/chat` remains raw chat and does not use retrieved evidence.
 
 ## Run and test
 

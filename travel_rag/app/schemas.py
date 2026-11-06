@@ -17,3 +17,13 @@ class ChatResponse(BaseModel):
     request_id: str
     latency_ms: float
     token_usage: TokenUsage
+
+class AskResponse(BaseModel):
+    answer: str
+    citations: list[dict]
+    retrieved: list[dict]
+    refused: bool = False
+    request_id: str
+    latency_ms: float
+    token_usage: TokenUsage
+    

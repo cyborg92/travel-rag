@@ -4,10 +4,10 @@ A hands-on learning project for building a travel-policy assistant with Python,
 FastAPI, Ollama, and Chroma. All policy content is synthetic.
 
 > **Project status:** The API, policy ingestion/chunking, Ollama embedding
-> client, full-corpus Chroma indexing, and top-K semantic retrieval experiment
-> are implemented. The current `/chat` endpoint is raw chat, not a grounded
-> RAG endpoint; retrieved chunks can be formatted as labeled context and a
-> grounding prompt is implemented, while wiring these into `POST /ask` is next.
+> client, full-corpus Chroma indexing, and top-K semantic retrieval are
+> implemented. `POST /ask` wires retrieval, labeled context, a grounding prompt,
+> and chat together. Day 4 remains in progress while known/unknown questions
+> and other roadmap behaviors are validated.
 
 ## What works today
 
@@ -16,6 +16,7 @@ FastAPI, Ollama, and Chroma. All policy content is synthetic.
 | `GET /` | Returns `server is running` as plain text. |
 | `GET /health` | Returns a small JSON health response. |
 | `POST /chat` | Sends a question to Ollama and returns the answer, request ID, latency, and token usage. |
+| `POST /ask` | Retrieves up to three policy chunks, asks Ollama using labeled context, and returns the answer, mapped citations, all retrieved matches, and a refusal flag. |
 | Policy utilities | Loads four synthetic Markdown policies and creates fixed-size or heading-based chunks. |
 | Embeddings | Calls Ollama with the configured embedding model; a live call returned a 768-dimensional vector. |
 | Chroma experiment | Indexes policy sections in a local persistent collection using stable IDs and `upsert`, then retrieves top-K matches. |
@@ -24,6 +25,10 @@ FastAPI, Ollama, and Chroma. All policy content is synthetic.
 Chat validation errors return HTTP 422, Ollama timeouts return 504, and other
 Ollama service errors return 502. These API paths are covered by automated
 tests that use fakes rather than requiring a live Ollama service.
+When retrieval returns no chunks, `/ask` returns an insufficient-evidence
+response without calling the chat model. Citation labels in the answer are
+mapped by retrieval order to Chroma IDs and metadata; the structured citations
+do not trust metadata repeated by the model.
 
 ## How the pieces fit
 
@@ -31,11 +36,12 @@ tests that use fakes rather than requiring a live Ollama service.
 POST /chat ──> FastAPI ──> Ollama chat model
 
 Synthetic policies ──> ingestion ──> Ollama embeddings ──> Chroma
-Question ──> Ollama embedding ──> top-K Chroma retrieval
+POST /ask ──> Ollama embedding ──> top-K Chroma retrieval
+         ──> labeled context + grounding prompt ──> Ollama chat model
 ```
 
-The retrieval flow is currently exercised by a standalone script. `/chat` does
-not yet use retrieved policy context.
+`/chat` remains raw chat and does not use retrieved policy context. `/ask` uses
+the retrieval flow for grounded answers.
 
 ## Quickstart
 
@@ -145,9 +151,10 @@ running Ollama service.
 
 - **Complete:** FastAPI chat endpoint, synthetic policy loading/chunking, and
   Day 3 embedding/Chroma indexing and top-K retrieval experiment.
-- **In progress:** Complete RAG: add grounding prompt instructions and expose
-  `POST /ask` with citations and insufficient-evidence behavior. Helpers now
-  format ranked results as context and build the grounding prompt.
+- **In progress:** Complete RAG: `POST /ask`, grounding instructions,
+  insufficient-evidence behavior, and citation mapping are implemented.
+  Validate known and unknown questions, contradictory evidence, and
+  prompt-injection text as described in the roadmap.
 
 See the [priority interview plan](.github/docs/14-day-interview-plan.md),
 [target architecture](.github/docs/ARCHITECTURE.md),
