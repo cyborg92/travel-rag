@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/travel_rag/.venv/bin/python",
+  "pylint.args": [
+    "--init-hook=import sys; sys.path.append('${workspaceFolder}/travel_rag')"
+  ]
+}
