@@ -146,7 +146,7 @@ ollama pull nomic-embed-text
 uvicorn app.main:app --reload
 ```
 
-Once, app is running,Interactive API docs are at <http://127.0.0.1:8000/docs>.
+Once the app is running, interactive API docs are at <http://127.0.0.1:8000/docs>.
 
 ### Endpoints
 
