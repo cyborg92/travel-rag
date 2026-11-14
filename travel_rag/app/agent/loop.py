@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.agent.prompts import build_system_prompt
 from app.agent.state import AgentState, ToolCallRecord
+from app.agent.completeness import missing_facts, quote_summaries
 from app.tools.executor import execute_tool
 
 logger = logging.getLogger(__name__)
@@ -19,6 +20,9 @@ MAX_TOOL_CALLS_ANSWER = "I couldn't complete this request."
 HAS_CALLED_TOOL_ANSWER = "you already made this call; use the earlier result"
 DEADLINE_SECONDS = 30
 TIMEOUT_ANSWER = "Request has been timed out"
+PREFIX = "Note: "
+SEPARATOR = "; "
+CONFIRMED_HEADER = "Confirmed figures from the booking system (these are correct if anything above differs):"
 
 async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentResult:
     start=clock()
@@ -55,4 +59,13 @@ async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentRe
         state.messages.append(reply)
         tool_calls = reply.get("tool_calls") or []
     logger.info("agent done: answered after %d tool calls", state.tool_call_count)
-    return AgentResult(answer=reply["content"], stop_reason="answered", tool_calls=state.tool_calls)
+    answer= reply["content"]
+    facts = missing_facts(state.tool_calls, answer)
+    texts = [fact.text for fact in facts]
+    if texts:
+        logger.warning("%d facts missing from answer: %s", len(texts), texts)
+        answer = answer + "\n\n" + PREFIX + SEPARATOR.join(texts)
+    summaries = quote_summaries(state.tool_calls)
+    if summaries:
+        answer = answer + "\n\n" + CONFIRMED_HEADER + "".join(f"\n- {line}" for line in summaries)
+    return AgentResult(answer=answer, stop_reason="answered", tool_calls=state.tool_calls)

@@ -106,7 +106,7 @@ include internal fields such as `owner_id`; a trimmed result model would
 remove them. Each tool function must still accept `user_id` and use it; the
 signature enforces the parameter, not the check.
 
-## Final-answer completeness: facts go in the tool result, the prompt asks, code is the fallback
+## Final-answer completeness: facts go in the tool result, the prompt asks, code checks and appends
 
 **Decision:** Put every fact the answer depends on into the tool result as data
 (the amounts' currency is a `currency` field, credits are explicit fields, and
@@ -132,6 +132,23 @@ Only A is in place. The observations are small samples; a real rate needs
 generation scoring in the evaluation harness. The "will be changed" claim
 matters most for the human-approval flow: the model must not state that a change
 happened.
+
+**Update (checks built):** after the loop's final reply, code now (1) appends
+any note or credit from the tool results that the answer lacks (notes matched
+by exact text, credits by amount) and (2) appends a "confirmed figures" line per
+successful quote, built from the result. Live runs showed why both were needed
+and where they stop. Across 5 runs on one local model: a credit dropped, a note
+dropped, a note paraphrased (so appended again as a duplicate), a quote with a
+wrong total (the model wrote 3500 + 23300 = 24000 when the total to pay was
+3500; the right number was also in the answer as the change fee, so a "contains
+the total" check would have passed it, and the confirmed-figures line is what
+corrects it), and twice a tool call written as text instead of made, once as
+raw JSON and once as "Now, calling the tool for PNR006". The checks guarantee
+that the facts and the true figures are shown; they do not make the model's own
+sentences correct, and a sentence that only mentions a note counts as
+presenting it. The production answer for money is option B in full: the code
+renders every amount and the model writes only the surrounding words. Text
+that imitates a tool call is not handled; it is returned as the answer.
 
 
 ## Agent loop: guards enforced in code, in a fixed order

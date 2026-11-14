@@ -6,7 +6,10 @@ from app.agent.loop import (
     DEADLINE_SECONDS,
     HAS_CALLED_TOOL_ANSWER,
     MAX_TOOL_CALLS,
+    CONFIRMED_HEADER,
     MAX_TOOL_CALLS_ANSWER,
+    PREFIX,
+    SEPARATOR,
     TIMEOUT_ANSWER,
     run_agent,
 )
@@ -305,3 +308,109 @@ def test_trace_does_not_contain_tool_results(caplog):
     run(run_agent("privacy", "user-1", model, clock=fixed_clock))
 
     assert not any("Demo Passenger" in line for line in messages_logged(caplog))
+
+
+QUOTE_PNR001 = tool_reply("quote_change", {"reference": "PNR001", "new_date": "2026-12-12"})
+
+
+def test_missing_credit_is_appended_to_the_final_answer():
+    model = FakeModel([QUOTE_PNR001, text_reply("Fee 3,500 INR. Tax difference is not included.")])
+    result = run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    assert result.stop_reason == "answered"
+    assert result.answer.startswith("Fee 3,500 INR. Tax difference is not included.")
+    assert PREFIX + "Travel credit of ₹700, valid for 12 months" in result.answer
+
+
+def test_missing_note_is_appended_to_the_final_answer():
+    model = FakeModel([QUOTE_PNR001, text_reply("Fee 3,500 INR and a 700 INR credit.")])
+    result = run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    assert PREFIX + "Tax difference is not included." in result.answer
+
+
+def test_several_missing_facts_are_joined_in_one_line():
+    model = FakeModel([QUOTE_PNR001, text_reply("It costs 3,500 INR.")])
+    result = run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    missing_line = result.answer.split("\n\n")[1]
+    assert missing_line == PREFIX + SEPARATOR.join(
+        ["Tax difference is not included.", "Travel credit of ₹700, valid for 12 months"]
+    )
+
+
+def test_complete_answer_gets_no_missing_facts_line():
+    complete = "Fee 3,500 INR, 700 INR credit valid 12 months. Tax difference is not included."
+    model = FakeModel([QUOTE_PNR001, text_reply(complete)])
+    result = run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    assert result.answer.startswith(complete)
+    assert PREFIX not in result.answer
+
+
+def test_answer_with_no_tool_calls_is_never_extended():
+    model = FakeModel([text_reply("Hello")])
+    result = run(run_agent("hi", "user-1", model, clock=fixed_clock))
+
+    assert result.answer == "Hello"
+
+
+def test_a_failed_tool_does_not_add_facts():
+    model = FakeModel([tool_reply("get_booking", {"reference": "PNR999"}), text_reply("Not found.")])
+    result = run(run_agent("find", "user-1", model, clock=fixed_clock))
+
+    assert result.answer == "Not found."
+
+
+def test_guard_stops_return_their_fixed_message_without_added_facts():
+    model = FakeModel([QUOTE_PNR001] + distinct_booking_calls(MAX_TOOL_CALLS + 1))
+    result = run(run_agent("limit", "user-1", model, clock=fixed_clock))
+
+    assert result.stop_reason == "too_many_calls"
+    assert result.answer == MAX_TOOL_CALLS_ANSWER
+
+
+def test_missing_facts_are_logged(caplog):
+    caplog.set_level(logging.INFO, logger="app.agent.loop")
+    model = FakeModel([QUOTE_PNR001, text_reply("Fee 3,500 INR.")])
+    run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    assert any("facts missing from answer" in line for line in messages_logged(caplog))
+
+
+def test_facts_from_every_quote_are_checked_against_the_one_answer():
+    quote_006 = tool_reply("quote_change", {"reference": "PNR006", "new_date": "2026-12-12"})
+    model = FakeModel([QUOTE_PNR001, quote_006, text_reply("Both cost money.")])
+    result = run(run_agent("both", "user-1", model, clock=fixed_clock))
+
+    assert result.answer.count("Tax difference is not included.") == 1
+
+
+WRONG_TOTAL_ANSWER = "PNR001: 3500 (change fee) + 23300 (new fare) = 24000. 700 credit. Tax difference is not included."
+
+
+def test_confirmed_figures_are_appended_even_when_the_model_states_a_wrong_total():
+    model = FakeModel([QUOTE_PNR001, text_reply(WRONG_TOTAL_ANSWER)])
+    result = run(run_agent("quote", "user-1", model, clock=fixed_clock))
+
+    assert result.answer.startswith(WRONG_TOTAL_ANSWER)
+    assert CONFIRMED_HEADER in result.answer
+    assert "- PNR001 to 2026-12-12: change fee ₹3,500, fare difference -₹700, total to pay ₹3,500" in result.answer
+
+
+def test_confirmed_figures_list_every_quote():
+    quote_006 = tool_reply("quote_change", {"reference": "PNR006", "new_date": "2026-12-12"})
+    model = FakeModel([QUOTE_PNR001, quote_006, text_reply("Both quoted.")])
+    result = run(run_agent("both", "user-1", model, clock=fixed_clock))
+
+    assert "- PNR001 to 2026-12-12" in result.answer
+    assert "- PNR006 to 2026-12-12: change fee ₹500, fare difference -₹700, total to pay ₹500" in result.answer
+
+
+def test_no_confirmed_figures_without_a_successful_quote():
+    refused = tool_reply("quote_change", {"reference": "PNR005", "new_date": "2026-12-12"})
+    model = FakeModel([refused, text_reply("That fare cannot be changed.")])
+    result = run(run_agent("restricted", "user-1", model, clock=fixed_clock))
+
+    assert result.answer == "That fare cannot be changed."
+    assert CONFIRMED_HEADER not in result.answer

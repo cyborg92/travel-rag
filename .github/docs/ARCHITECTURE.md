@@ -158,6 +158,24 @@ return reply text                             stop: "answered"
 - Parallel tool calls in one reply run in order and count individually
   against the limit.
 
+**Answer check (after the final reply, `app/agent/completeness.py`).** Two
+code-level steps run on the `answered` path only:
+
+1. *Required facts.* Notes and credits found in the tool results are checked
+   against the answer; any that are missing are appended as one line. A note is
+   matched by its exact text and a credit by its amount, so a paraphrased note
+   is appended again (a duplicate, which costs polish, not correctness).
+2. *Confirmed figures.* For every successful quote, a line built from the tool
+   result (reference, date, change fee, fare difference, total to pay) is
+   appended under a fixed header. The model's own text is not edited, so a
+   wrong figure in it stays visible next to the correct one.
+
+This is a floor, not a correctness proof. It cannot tell whether the model's
+own sentences are right, and a sentence that merely mentions a note counts as
+presenting it. For amounts that decide what a passenger pays, the production
+design is for the code to render the figures and for the model never to write
+a number.
+
 ### 5.4 Human approval for a change (designed)
 
 ```mermaid
@@ -241,7 +259,8 @@ Full records with evidence are in [decisions.md](decisions.md).
 | Invented or malformed tool arguments | Pydantic validation | Error observation; the model can correct or ask the user |
 | Unknown tool requested | Registry lookup | Error observation |
 | Tool raises | Executor | Generic message to the model; full error logged |
-| Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; a code-level check is the designed fix |
+| Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; missing notes and credits appended; confirmed figures appended from the tool result |
+| Model writes a tool call as text, or says it will call one, instead of calling it | Observed in 2 of 5 live runs | Not handled: the loop treats that text as the final answer; the confirmed-figures block shows which quotes actually ran |
 | Agent loops or stalls | Call limit, deadline, duplicate detection | Stop with a safe message and a `stop_reason` |
 | Duplicate or late confirm | Idempotency key, proposal status | Return the original result (designed) |
 

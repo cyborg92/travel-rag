@@ -26,7 +26,7 @@ consequential actions that require human confirmation.
   code validates the arguments against a strict schema, authorizes the caller
   in the data layer, executes, and returns every failure as an observation the
   model can act on.
-- **Tested without a live model.** 205 pytest tests use fakes for the model,
+- **Tested without a live model.** 240 pytest tests use fakes for the model,
   embeddings, HTTP calls and the clock.
 
 ## Architecture
@@ -62,6 +62,7 @@ consequential actions that require human confirmation.
 | Tools: `get_booking`, `get_fare_rules`, `quote_change` | Built |
 | System prompt for tool use | Built |
 | Bounded agent loop (call limit, deadline, repeated-call guard, trace log) | Built; per-tool timeout designed |
+| Answer check: required notes and credits, plus code-built confirmed figures | Built (a floor, not a correctness proof) |
 | Propose / confirm / execute for booking changes | Designed |
 | Tracing, metrics, audit log | Designed |
 
@@ -102,7 +103,9 @@ returns         a Pydantic result serialized as JSON, e.g. fee, fare difference,
 Observed against a local model, the validation layer caught invented arguments
 (`your_booking_reference`, `new_date: "YYYY-MM-DD"`) and the model recovered
 from the error message. The final answer can still drift from the tool result
-(currency, omitted credits or notes); [decisions.md](.github/docs/decisions.md)
+(currency, omitted credits or notes, a wrong total); the loop now appends the
+missing notes and credits and the confirmed figures from the tool result, but
+cannot make the model's own wording correct; [decisions.md](.github/docs/decisions.md)
 records what fixed what and what remains open.
 
 ## Project layout
