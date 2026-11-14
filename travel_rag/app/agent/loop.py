@@ -6,6 +6,7 @@ from app.agent.prompts import build_system_prompt
 from app.agent.state import AgentState, ToolCallRecord
 from app.agent.completeness import missing_facts, quote_summaries
 from app.tools.executor import execute_tool
+from app.agent.text_tool_calls import tool_calls_from_text
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +35,7 @@ async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentRe
     logger.info("agent start: user=%s", user_id)
     reply = await ask_model(state.messages)
     state.messages.append(reply)
-    tool_calls = reply.get("tool_calls") or []
+    tool_calls = requests_from(reply)
     while tool_calls:
         elapsed = state.elapsed(clock())
         if elapsed > DEADLINE_SECONDS:
@@ -57,7 +58,7 @@ async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentRe
             state.messages.append({"role": "tool", "content": observation})
         reply= await ask_model(state.messages)
         state.messages.append(reply)
-        tool_calls = reply.get("tool_calls") or []
+        tool_calls = requests_from(reply)
     logger.info("agent done: answered after %d tool calls", state.tool_call_count)
     answer= reply["content"]
     facts = missing_facts(state.tool_calls, answer)
@@ -69,3 +70,11 @@ async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentRe
     if summaries:
         answer = answer + "\n\n" + CONFIRMED_HEADER + "".join(f"\n- {line}" for line in summaries)
     return AgentResult(answer=answer, stop_reason="answered", tool_calls=state.tool_calls)
+
+def requests_from(reply) -> list[dict]:
+    real = reply.get("tool_calls") or []
+    if not real:
+        real = tool_calls_from_text(reply.get("content"))
+        if real:
+            logger.warning("agent recovered tool call from text: %s", real[0]["function"]["name"])
+    return real

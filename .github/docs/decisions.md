@@ -148,7 +148,7 @@ that the facts and the true figures are shown; they do not make the model's own
 sentences correct, and a sentence that only mentions a note counts as
 presenting it. The production answer for money is option B in full: the code
 renders every amount and the model writes only the surrounding words. Text
-that imitates a tool call is not handled; it is returned as the answer.
+that imitates a tool call is handled separately, below.
 
 
 ## Agent loop: guards enforced in code, in a fixed order
@@ -180,3 +180,28 @@ would be wrong for a tool whose result changes over time; the current tools are
 read-only quotes. The final answer can still omit credits or notes (two live
 runs dropped a different one each time), so the completeness check above
 remains the open item.
+
+## Tool requests written as text: recover the strict case, keep the trust boundary
+
+**Decision:** When a reply has no `tool_calls` but its text is, in its entirety,
+a JSON object with a `name` that is a registered tool and `parameters` or
+`arguments` that is an object, treat it as a tool request. It enters the same
+path as a real request, so schema validation, the owner check, the call limit,
+the duplicate check and the deadline all apply, and the loop logs a warning.
+Real `tool_calls` always win over text.
+
+**Why:** In 2 of 8 live runs the local model wrote a request as text, once as
+raw JSON and once as a promise ("Now, calling the tool for PNR006"). The loop
+saw no tool calls and returned that text as the final answer, so a booking was
+never quoted and the passenger saw JSON. Recovering the strict shape is a few
+lines, deterministic and tested with the fake model. It does not weaken the
+trust boundary: identity still comes from the caller (a model-supplied
+`user_id` is still rejected) and an unknown tool name is ignored.
+
+**Trade-offs and follow-up:** Only a reply that is entirely the request is
+recovered; JSON mixed into prose is left as the answer, and a promise to call a
+tool cannot be recovered because it contains no request. Both remain known
+gaps. A lenient parser raises the risk of executing JSON the model merely
+quoted, which is why the name must be a registered tool. Observed on one local
+model; the three live runs after the change did not trigger the path, so the
+unit tests are the evidence it works, not a live recovery.

@@ -157,6 +157,11 @@ return reply text                             stop: "answered"
   counts, not tool results, which contain booking data.
 - Parallel tool calls in one reply run in order and count individually
   against the limit.
+- **A request written as text is recovered, not trusted.** If a reply has no
+  tool calls but its text is a JSON object naming a registered tool with an
+  object of arguments, it becomes a request in the normal shape. It then goes
+  through validation, the owner check and every guard like any other request,
+  and the loop logs a warning.
 
 **Answer check (after the final reply, `app/agent/completeness.py`).** Two
 code-level steps run on the `answered` path only:
@@ -260,7 +265,7 @@ Full records with evidence are in [decisions.md](decisions.md).
 | Unknown tool requested | Registry lookup | Error observation |
 | Tool raises | Executor | Generic message to the model; full error logged |
 | Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; missing notes and credits appended; confirmed figures appended from the tool result |
-| Model writes a tool call as text, or says it will call one, instead of calling it | Observed in 2 of 5 live runs | Not handled: the loop treats that text as the final answer; the confirmed-figures block shows which quotes actually ran |
+| Model writes a tool call as text instead of making one | Observed in 2 of 8 live runs | A reply that is entirely a request naming a registered tool is recovered and run through the normal executor; JSON mixed into prose and promises like "now calling the tool" are not recovered, and the confirmed-figures block shows which quotes actually ran |
 | Agent loops or stalls | Call limit, deadline, duplicate detection | Stop with a safe message and a `stop_reason` |
 | Duplicate or late confirm | Idempotency key, proposal status | Return the original result (designed) |
 
