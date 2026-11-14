@@ -11,6 +11,8 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
     ollama_embedding_model: str = "nomic-embed-text"
     ollama_timeout_seconds: float = Field(default=60, gt=0)
+    # Demo routes run deterministic code paths (no model) for showcasing. Off by default.
+    enable_demo_routes: bool = True
 
 
 @lru_cache
