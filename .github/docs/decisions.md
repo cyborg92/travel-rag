@@ -133,3 +133,33 @@ generation scoring in the evaluation harness. The "will be changed" claim
 matters most for the human-approval flow: the model must not state that a change
 happened.
 
+
+## Agent loop: guards enforced in code, in a fixed order
+
+**Decision:** Run the model-and-tools loop under three guards that the model
+cannot talk its way past: a deadline checked at the top of each round, a call
+limit checked before each individual request, and a duplicate check (tool name
+plus arguments with sorted keys) that skips a repeat and tells the model to use
+the earlier result. Each stop returns a `stop_reason`. The model function and
+the clock are passed in rather than created inside the loop.
+
+**Why:** The model decides how many rounds happen, so the code must decide when
+they stop. The limit is checked per request, not per round, because one reply
+can carry several requests: a per-round check would let a reply of seven requests
+run past a limit of five. Skipped duplicates do not count toward
+the limit, which keeps a harmless repeat from spending the budget, but it means
+a model that only repeats itself never reaches the limit; the deadline is what
+bounds that case, and a test forces it. Injecting the clock and the model made
+every stop reason testable with no network and no waiting. On a live local
+model the loop finished in two tool calls and answered; the guards did not
+trigger.
+
+**Trade-offs and follow-up:** The deadline is checked between rounds, so one
+hung model call is bounded only by the HTTP timeout, and a slow tool is not
+bounded at all; a per-tool timeout is designed and unbuilt because the current
+tools are in-memory. A limit stop returns a fixed message, not an explanation
+from the model. The duplicate rule treats any identical repeat as wasted, which
+would be wrong for a tool whose result changes over time; the current tools are
+read-only quotes. The final answer can still omit credits or notes (two live
+runs dropped a different one each time), so the completeness check above
+remains the open item.

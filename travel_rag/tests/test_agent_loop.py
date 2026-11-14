@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from datetime import datetime, timedelta
 
 from app.agent.loop import (
@@ -262,3 +263,45 @@ def test_fast_runs_never_trigger_the_deadline():
     result = run(run_agent("quick", "user-1", model, clock=fixed_clock))
 
     assert result.stop_reason == "answered"
+
+
+def messages_logged(caplog) -> list[str]:
+    return [record.getMessage() for record in caplog.records if record.name == "app.agent.loop"]
+
+
+def test_trace_records_each_tool_run_and_the_final_answer(caplog):
+    caplog.set_level(logging.INFO, logger="app.agent.loop")
+    model = FakeModel([tool_reply("get_booking", {"reference": "PNR001"}), text_reply("done")])
+    run(run_agent("trace me", "user-1", model, clock=fixed_clock))
+
+    logged = messages_logged(caplog)
+    assert any("agent tool: get_booking" in line for line in logged)
+    assert any("answered after 1 tool calls" in line for line in logged)
+
+
+def test_trace_records_a_skipped_duplicate(caplog):
+    caplog.set_level(logging.INFO, logger="app.agent.loop")
+    same = tool_reply("get_booking", {"reference": "PNR001"})
+    model = FakeModel([same, same, text_reply("done")])
+    run(run_agent("repeat", "user-1", model, clock=fixed_clock))
+
+    assert any("skip duplicate" in line for line in messages_logged(caplog))
+
+
+def test_trace_records_why_a_run_was_stopped(caplog):
+    caplog.set_level(logging.INFO, logger="app.agent.loop")
+    run(run_agent("limit", "user-1", FakeModel(distinct_booking_calls(MAX_TOOL_CALLS + 1)), clock=fixed_clock))
+    assert any("too_many_calls" in line for line in messages_logged(caplog))
+
+    caplog.clear()
+    clock = SteppingClock(at(0), at(DEADLINE_SECONDS + 5))
+    run(run_agent("slow", "user-1", FakeModel(distinct_booking_calls(2)), clock=clock))
+    assert any("timeout" in line for line in messages_logged(caplog))
+
+
+def test_trace_does_not_contain_tool_results(caplog):
+    caplog.set_level(logging.DEBUG, logger="app.agent.loop")
+    model = FakeModel([tool_reply("get_booking", {"reference": "PNR001"}), text_reply("done")])
+    run(run_agent("privacy", "user-1", model, clock=fixed_clock))
+
+    assert not any("Demo Passenger" in line for line in messages_logged(caplog))

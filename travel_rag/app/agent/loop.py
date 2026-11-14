@@ -1,8 +1,12 @@
-from app.agent.state import AgentState, ToolCallRecord
-from app.agent.prompts import build_system_prompt
-from app.tools.executor import execute_tool
-from dataclasses import dataclass 
+import logging
+from dataclasses import dataclass
 from datetime import datetime
+
+from app.agent.prompts import build_system_prompt
+from app.agent.state import AgentState, ToolCallRecord
+from app.tools.executor import execute_tool
+
+logger = logging.getLogger(__name__)
 
 @dataclass(frozen=True)
 class AgentResult:
@@ -23,25 +27,32 @@ async def run_agent(question, user_id, ask_model, clock=datetime.now) -> AgentRe
             {"role": "user", "content": question},
         ]
     state = AgentState(messages=messages, started_at = start)
+    logger.info("agent start: user=%s", user_id)
     reply = await ask_model(state.messages)
     state.messages.append(reply)
     tool_calls = reply.get("tool_calls") or []
     while tool_calls:
-        if state.elapsed(clock()) > DEADLINE_SECONDS:
+        elapsed = state.elapsed(clock())
+        if elapsed > DEADLINE_SECONDS:
+            logger.warning("agent stop: timeout after %.1fs, %d tool calls", elapsed, state.tool_call_count)
             return AgentResult(answer=TIMEOUT_ANSWER, stop_reason="timeout", tool_calls=state.tool_calls)
         for request in tool_calls:
             if state.tool_call_count >= MAX_TOOL_CALLS:
+                logger.warning("agent stop: too_many_calls at limit %d", MAX_TOOL_CALLS)
                 return AgentResult(answer=MAX_TOOL_CALLS_ANSWER, stop_reason="too_many_calls", tool_calls=state.tool_calls)
             
             name = request["function"]["name"]
             arguments = request["function"]["arguments"]
             if state.has_called(name,arguments):
+                logger.info("agent skip duplicate: %s %s", name, arguments)
                 state.messages.append({"role": "tool", "content": HAS_CALLED_TOOL_ANSWER})
                 continue
+            logger.info("agent tool: %s %s", name, arguments)
             observation = execute_tool(name, arguments,user_id)
             state.record_call(name, arguments, observation)
             state.messages.append({"role": "tool", "content": observation})
         reply= await ask_model(state.messages)
         state.messages.append(reply)
         tool_calls = reply.get("tool_calls") or []
+    logger.info("agent done: answered after %d tool calls", state.tool_call_count)
     return AgentResult(answer=reply["content"], stop_reason="answered", tool_calls=state.tool_calls)

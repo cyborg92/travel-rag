@@ -32,7 +32,7 @@ data, flight- or safety-critical functions.
 flowchart TD
     U[Client] --> API[FastAPI]
     API --> RAG[RAG path]
-    API --> ORCH[Orchestration: agent loop, in progress]
+    API --> ORCH[Orchestration: agent loop]
     RAG --> EMB[Ollama embeddings]
     RAG --> VDB[(Chroma)]
     RAG --> BM[(BM25 index)]
@@ -62,7 +62,7 @@ flowchart TD
 | Tool executor | `app/tools/executor.py` | Reject unknown tools; validate arguments; run with the caller's identity; return errors as observations | Built |
 | Mock backend | `app/mock_backend/` | Bookings with owners; fare codes, change-fee bands, fares; owner check on every lookup | Built |
 | System prompt | `app/agent/prompts.py` | Server date, currency, ask-don't-guess, report credits and notes | Built |
-| Agent loop | `app/agent/` | Repeat model → tools → observations with a step limit, a deadline and repeated-call detection | In progress |
+| Agent loop | `app/agent/loop.py`, `app/agent/state.py`, `app/agent/model.py` | Repeat model → tools → observations with a call limit, a deadline, repeated-call detection and a trace log; the model function and clock are injected | Built; per-tool timeout designed |
 | Proposal store | | Pending consequential actions: ID, owner, exact parameters and their hash, expiry, idempotency key | Designed |
 | Observability and audit | | Per-request trace; immutable record of proposed, confirmed and executed actions | Designed |
 
@@ -125,22 +125,38 @@ The model only requests the call. Identity is supplied by application code; the
 argument models reject a model-supplied `user_id`. A booking that does not exist
 and a booking that belongs to someone else return the same message.
 
-### 5.3 Agent loop (in progress)
+### 5.3 Agent loop
 
 ```text
-state = {messages, tool_call_log, started_at}
-loop:
-    if tool calls >= MAX_TOOL_CALLS or elapsed > DEADLINE: stop with a safe message
-    reply = model(state.messages, tool_schemas)
-    if reply has no tool calls: return reply
+state = AgentState(messages, started_at, tool_call_log)
+reply = model(state.messages)
+while reply has tool calls:
+    if elapsed > DEADLINE:                    stop: "timeout"
     for each requested call:
-        if the same (name, arguments) was already called: observation = "duplicate call"
-        else: observation = execute_tool(...) under a per-tool timeout
-        append observation; record the step
+        if tool calls run >= MAX_TOOL_CALLS:  stop: "too_many_calls"
+        if (name, arguments) already called:  observation = "already called, use the earlier result"
+        else: observation = execute_tool(name, arguments, user_id); record it
+        append the observation as a tool message
+    reply = model(state.messages)
+return reply text                             stop: "answered"
 ```
 
-Parallel tool calls in one reply are supported by the executor today; the loop
-adds the guards and the trace.
+- **Tool calls are keyed canonically** (tool name plus arguments with sorted
+  keys), so a repeat is caught even when the argument order differs.
+- **Skipped duplicates do not use the call budget**, so a model that only
+  repeats itself never reaches the call limit. The deadline is what stops it.
+- **The deadline is checked between rounds.** A single hung model call is
+  bounded by the HTTP timeout on the model client. A per-tool timeout is
+  designed, not built: the current tools are in-memory functions.
+- **The model function and the clock are injected.** Tests use a scripted
+  fake model and a stepping clock, so every stop reason is forced
+  deterministically with no network and no waiting.
+- **Every run returns a `stop_reason`** (`answered`, `too_many_calls`,
+  `timeout`) with the calls that ran. The loop logs one line per decision
+  (tool run, duplicate skipped, stop reason). It logs names, arguments and
+  counts, not tool results, which contain booking data.
+- Parallel tool calls in one reply run in order and count individually
+  against the limit.
 
 ### 5.4 Human approval for a change (designed)
 
@@ -226,7 +242,7 @@ Full records with evidence are in [decisions.md](decisions.md).
 | Unknown tool requested | Registry lookup | Error observation |
 | Tool raises | Executor | Generic message to the model; full error logged |
 | Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; a code-level check is the designed fix |
-| Agent loops or stalls | Step limit, deadline, duplicate detection | Stop with a safe message (in progress) |
+| Agent loops or stalls | Call limit, deadline, duplicate detection | Stop with a safe message and a `stop_reason` |
 | Duplicate or late confirm | Idempotency key, proposal status | Return the original result (designed) |
 
 ## 9. Security model

@@ -26,8 +26,8 @@ consequential actions that require human confirmation.
   code validates the arguments against a strict schema, authorizes the caller
   in the data layer, executes, and returns every failure as an observation the
   model can act on.
-- **Tested without a live model.** 165 pytest tests use fakes for the model,
-  embeddings and HTTP calls.
+- **Tested without a live model.** 205 pytest tests use fakes for the model,
+  embeddings, HTTP calls and the clock.
 
 ## Architecture
 
@@ -61,7 +61,7 @@ consequential actions that require human confirmation.
 | Tool registry, executor and trust boundary | Built |
 | Tools: `get_booking`, `get_fare_rules`, `quote_change` | Built |
 | System prompt for tool use | Built |
-| Bounded agent loop (step limit, deadline, repeated-call guard) | In progress |
+| Bounded agent loop (call limit, deadline, repeated-call guard, trace log) | Built; per-tool timeout designed |
 | Propose / confirm / execute for booking changes | Designed |
 | Tracing, metrics, audit log | Designed |
 
@@ -119,7 +119,7 @@ travel_rag/
 │   ├── rag/             context builder, grounding prompt, citation mapping
 │   ├── tools/           tool registry, argument schemas, executor
 │   ├── mock_backend/    synthetic bookings and fares
-│   └── agent/           system prompt; agent loop in progress
+│   └── agent/           system prompt, agent state, bounded agent loop, model function
 ├── data/policies/       synthetic policy documents
 ├── eval/datasets/       labelled retrieval dataset (JSONL)
 ├── scripts/             experiment runners (metrics, hybrid comparison, tools)
@@ -180,6 +180,7 @@ python -m scripts.embedding_tester_script        # index the corpus into Chroma 
 python -m scripts.retriever_metrics_tester_script # semantic retrieval metrics on the eval set
 python -m scripts.hybrid_metrics_tester_script    # semantic vs BM25 vs hybrid
 python -m scripts.ollama_tools_experiment_script  # a tool-calling round trip, printing every message
+python -m scripts.ollama_tools_agent_experiment_script  # the agent loop against a local model
 ```
 
 ### Tests
