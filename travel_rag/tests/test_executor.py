@@ -79,7 +79,8 @@ def test_other_users_booking_looks_like_not_found() -> None:
 def test_owner_can_read_own_booking() -> None:
     result = json.loads(execute_tool("get_booking", {"reference": "PNR004"}, "user-2"))
 
-    assert result["owner_id"] == "user-2"
+    assert result["reference"] == "PNR004"
+    assert result["passenger_name"] == "Other Passenger"
 
 
 def test_model_cannot_supply_user_id() -> None:
