@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from app.api.routes.demo import DEMO_USER_ID, router
+from app.config import get_settings
 
 
 def make_client() -> TestClient:
@@ -16,10 +17,12 @@ def execute(client: TestClient, name: str, arguments: dict, **kwargs):
     return client.post("/demo/tools/execute", json={"name": name, "arguments": arguments}, **kwargs)
 
 
-def test_demo_routes_are_not_mounted_by_default() -> None:
+def test_demo_routes_are_mounted_only_when_the_flag_is_on() -> None:
     from app.main import app
 
-    assert not [path for path in app.openapi()["paths"] if path.startswith("/demo")]
+    mounted = any(path.startswith("/demo") for path in app.openapi()["paths"])
+
+    assert mounted == get_settings().enable_demo_routes
 
 
 def test_execute_returns_own_booking_as_the_fixed_user() -> None:

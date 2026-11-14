@@ -11,7 +11,7 @@ class Settings(BaseSettings):
     ollama_model: str = "llama3.1:8b"
     ollama_embedding_model: str = "nomic-embed-text"
     ollama_timeout_seconds: float = Field(default=60, gt=0)
-    # Demo routes run deterministic code paths (no model) for showcasing. Off by default.
+    # Demo routes run deterministic code paths (no model) for showcasing. On by default; set TRAVEL_RAG_ENABLE_DEMO_ROUTES=false to hide them.
     enable_demo_routes: bool = True
 
 
