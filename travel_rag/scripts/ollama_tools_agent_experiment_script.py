@@ -1,9 +1,8 @@
-"""Send one raw chat request straight to Ollama and print the full response.
+"""Run the bounded agent loop against a local model and print the outcome.
 
-Used to look at what the model actually returns (for example `tool_calls`)
-without the FastAPI server or the chat client wrapper in the way. Run from
-travel_rag/:
-    ./.venv/bin/python -m scripts.ollama_tools_experiment_script
+Prints the final answer, why the loop stopped, and every tool call it ran.
+Needs Ollama running. Run from travel_rag/:
+    ./.venv/bin/python -m scripts.ollama_tools_agent_experiment_script
 """
 import asyncio
 import httpx2

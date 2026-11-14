@@ -49,7 +49,7 @@ flowchart TD
 
 | Component | Location | Responsibility | State |
 |---|---|---|---|
-| API | `app/main.py`, `app/api/routes/` | `/health`, `/chat`, `/ask`, `/chunkertest`; Pydantic request and response models; 422 / 502 / 504 error mapping | Built |
+| API | `app/main.py`, `app/api/routes/` | `/`, `/health`, `/chat`, `/ask`, `/chunkertest`, and flag-gated `/demo/tools/execute` and `/demo/tools/quote` (deterministic, no model, fixed test user, no authentication); Pydantic request and response models; an `X-Request-ID` header on every response; 422 / 502 / 504 error mapping | Built |
 | Configuration | `app/config.py` | Typed settings with the `TRAVEL_RAG_` prefix | Built |
 | Chat client | `app/llm/` | Async Ollama calls with timeouts and token usage; one shared HTTP client created and closed in the FastAPI lifespan | Built |
 | Ingestion | `app/ingestion/` | Load Markdown policies; fixed-size and heading-aware chunking; embed and upsert with stable IDs | Built |
@@ -57,12 +57,12 @@ flowchart TD
 | Vector store | `app/vector_store/` | Persistent Chroma collection | Built |
 | Retrieval | `app/retrieval/` | Semantic top-K; BM25; Reciprocal Rank Fusion; retrieval metrics | Built; hybrid not yet used by `/ask` |
 | Context and prompt | `app/rag/` | Ordered, source-labelled context; grounding and untrusted-data instructions; citation mapping from labels to chunk IDs | Built |
-| Evaluation | `eval/`, `scripts/` | Labelled dataset; per-case and aggregate Hit@K, Precision@K, Recall@K, MRR; strategy comparison | Built for retrieval; generation scoring designed |
+| Evaluation | `eval/`, `scripts/` | Labelled dataset; per-case and aggregate Hit@K, Precision@K, Recall@K, MRR; strategy comparison; an end-to-end runner that sends every case through `/ask` and records whether the expected chunk was retrieved and cited and whether the refusal decision was correct | Built for retrieval and for the `/ask` runner; answer quality is judged by hand, automated groundedness scoring designed |
 | Tool registry | `app/tools/registry.py`, `app/tools/schemas.py`, `app/tools/results.py` | One `ToolSpec` per tool: name, model-facing description, argument model, function; result views limit what the model sees | Built |
 | Tool executor | `app/tools/executor.py` | Reject unknown tools; validate arguments; run with the caller's identity; return errors as observations | Built |
 | Mock backend | `app/mock_backend/` | Bookings with owners; fare codes, change-fee bands, fares; owner check on every lookup | Built |
 | System prompt | `app/agent/prompts.py` | Server date, currency, ask-don't-guess, report credits and notes | Built |
-| Agent loop | `app/agent/loop.py`, `app/agent/state.py`, `app/agent/model.py` | Repeat model → tools → observations with a call limit, a deadline, repeated-call detection and a trace log; the model function and clock are injected | Built; per-tool timeout designed |
+| Agent loop | `app/agent/loop.py`, `state.py`, `model.py`, `completeness.py`, `text_tool_calls.py` | Repeat model → tools → observations with a call limit, a deadline, repeated-call detection and a log line per decision; recover a tool request written as text; after the final reply append missing notes and credits and the confirmed figures of each quote; the model function and clock are injected. Run from a script, not behind an API route | Built; per-tool timeout designed |
 | Proposal store | `app/proposals/` | Pending consequential actions: ID, owner, exact parameters, quoted amounts, parameter hash, expiry; a state machine with an explicit transition table; SQLite storage with insert-only saves and owner-scoped reads | In progress: models, transition table, `transition` and `save`/`get` built; atomic claim, confirm and execute designed |
 | Observability and audit | | Per-request trace; immutable record of proposed, confirmed and executed actions | Designed |
 
