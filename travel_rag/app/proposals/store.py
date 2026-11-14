@@ -1,19 +1,20 @@
-import sqlite3
 import json
-from app.proposals.models import Proposal 
+import sqlite3
+from uuid import UUID
+
+from app.proposals.models import Proposal
+
+# Insert only. A state change must never be a blind overwrite from a possibly
+# stale copy; it goes through a method that carries its own condition.
 SAVE_SQL = """
     INSERT INTO proposals (id, owner_id, status, claimed_at, expires_at, result_json, data)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(id) DO UPDATE SET
-        status      = excluded.status,
-        claimed_at  = excluded.claimed_at,
-        result_json = excluded.result_json
 """
 
 GET_SQL = """
     SELECT id, owner_id, status, claimed_at, expires_at, result_json, data
     FROM proposals
-    WHERE id = ?
+    WHERE id = ? AND owner_id = ?
 """
 
 class ProposalStore:
@@ -32,7 +33,7 @@ class ProposalStore:
         """)
         self._conn.commit()
 
-    def save(self, proposal) ->None:
+    def save(self, proposal: Proposal) -> None:
         fixed = {
             "action": proposal.action,
             "reference": proposal.reference,
@@ -55,17 +56,17 @@ class ProposalStore:
         with self._conn:
             self._conn.execute(SAVE_SQL, params)
 
-    def get(self, proposal_id, owner_id) -> Proposal | None:
-        row = self._conn.execute(GET_SQL, (str(proposal_id),)).fetchone()
+    def get(self, proposal_id: UUID, owner_id: str) -> Proposal | None:
+        row = self._conn.execute(GET_SQL, (str(proposal_id), owner_id)).fetchone()
         if row is None:
             return None
 
-        (id_, owner_id, status, claimed_at, expires_at, result_json, data) = row
+        (id_, row_owner, status, claimed_at, expires_at, result_json, data) = row
         fixed = json.loads(data)
 
         return Proposal(
             id=id_,
-            owner_id=owner_id,
+            owner_id=row_owner,
             status=status,
             claimed_at=claimed_at,
             expires_at=expires_at,

@@ -1,3 +1,4 @@
+import sqlite3
 from datetime import timedelta
 from uuid import uuid4
 
@@ -50,3 +51,12 @@ def test_values_are_passed_as_parameters_not_pasted_into_sql(store):
     store.save(proposal)
     assert store.get(proposal.id, "user-1'; DROP TABLE proposals; --") == proposal
     assert store.get(proposal.id, "user-1") is None
+
+
+def test_saving_the_same_proposal_twice_is_an_error_not_an_overwrite(store):
+    proposal = make_proposal(status=Status.EXECUTED, result={"ok": True})
+    store.save(proposal)
+    stale_copy = proposal.model_copy(update={"status": Status.PENDING, "result": None})
+    with pytest.raises(sqlite3.IntegrityError):
+        store.save(stale_copy)
+    assert store.get(proposal.id, "user-1").status is Status.EXECUTED
