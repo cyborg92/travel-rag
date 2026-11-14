@@ -58,7 +58,7 @@ flowchart TD
 | Retrieval | `app/retrieval/` | Semantic top-K; BM25; Reciprocal Rank Fusion; retrieval metrics | Built; hybrid not yet used by `/ask` |
 | Context and prompt | `app/rag/` | Ordered, source-labelled context; grounding and untrusted-data instructions; citation mapping from labels to chunk IDs | Built |
 | Evaluation | `eval/`, `scripts/` | Labelled dataset; per-case and aggregate Hit@K, Precision@K, Recall@K, MRR; strategy comparison | Built for retrieval; generation scoring designed |
-| Tool registry | `app/tools/registry.py`, `app/tools/schemas.py` | One `ToolSpec` per tool: name, model-facing description, argument model, function | Built |
+| Tool registry | `app/tools/registry.py`, `app/tools/schemas.py`, `app/tools/results.py` | One `ToolSpec` per tool: name, model-facing description, argument model, function; result views limit what the model sees | Built |
 | Tool executor | `app/tools/executor.py` | Reject unknown tools; validate arguments; run with the caller's identity; return errors as observations | Built |
 | Mock backend | `app/mock_backend/` | Bookings with owners; fare codes, change-fee bands, fares; owner check on every lookup | Built |
 | System prompt | `app/agent/prompts.py` | Server date, currency, ask-don't-guess, report credits and notes | Built |
@@ -223,6 +223,7 @@ Implemented:
 ```text
 Chunk:        id (source:index), text, source, chunk_index, section
 Booking:      reference, owner_id, passenger_name, origin, destination, departure_date, fare_class, status
+BookingView: reference, passenger_name, origin, destination, departure_date, fare_class, status  (what get_booking returns to the model: no owner_id; an allow-list)
 ToolSpec:     name, description, args_model, func
 FareRules:    reference, fare_code, fare_type, changeable, condition
 ChangeQuote:  reference, new_date, changeable, reason, change_fee, old_fare, new_fare,

@@ -101,9 +101,11 @@ the tool load the booking itself keeps booking data out of model-supplied
 arguments, which would let the model assert its own fare class.
 
 **Trade-offs and follow-up:** Tool choice was observed in one run per question
-with one local model; it is not a measured selection accuracy. Results still
-include internal fields such as `owner_id`; a trimmed result model would
-remove them. Each tool function must still accept `user_id` and use it; the
+with one local model; it is not a measured selection accuracy. `get_booking`
+returns a trimmed `BookingView` (no `owner_id`) built by an allow-list: the
+view declares the fields the model may see, so a field added to the booking
+later does not reach the model unless the view lists it. The data layer and
+the fare logic still use the full booking for the owner check. Each tool function must still accept `user_id` and use it; the
 signature enforces the parameter, not the check.
 
 ## Final-answer completeness: facts go in the tool result, the prompt asks, code checks and appends
