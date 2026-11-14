@@ -12,6 +12,7 @@ from starlette.responses import Response
 
 from app.config import get_settings
 from app.api.routes import router
+from app.api.routes.demo import router as demo_router
 from app.embeddings.client import OllamaEmbeddingClient
 from app.llm.client import OllamaChatClient
 
@@ -37,6 +38,8 @@ app = FastAPI(
 )
 
 app.include_router(router)
+if get_settings().enable_demo_routes:
+    app.include_router(demo_router)
 
 
 @app.middleware("http")
