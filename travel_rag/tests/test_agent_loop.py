@@ -1,4 +1,5 @@
 import asyncio
+import json
 import logging
 from datetime import datetime, timedelta
 
@@ -414,3 +415,98 @@ def test_no_confirmed_figures_without_a_successful_quote():
 
     assert result.answer == "That fare cannot be changed."
     assert CONFIRMED_HEADER not in result.answer
+
+
+def text_request(name: str, params: dict) -> dict:
+    """A reply where the model wrote the tool request as text instead of tool_calls."""
+    return text_reply(json.dumps({"name": name, "parameters": params}))
+
+
+def test_tool_request_written_as_text_is_executed():
+    model = FakeModel([
+        text_request("get_booking", {"reference": "PNR001"}),
+        text_reply("Your booking is confirmed."),
+    ])
+    result = run(run_agent("show PNR001", "user-1", model, clock=fixed_clock))
+
+    assert result.stop_reason == "answered"
+    assert result.answer == "Your booking is confirmed."
+    assert [c.name for c in result.tool_calls] == ["get_booking"]
+    assert model.calls[1][-1]["role"] == "tool"  # the model was shown the result
+
+
+def test_text_requests_work_in_later_rounds_too():
+    model = FakeModel([
+        tool_reply("get_booking", {"reference": "PNR001"}),
+        text_request("get_fare_rules", {"reference": "PNR001"}),
+        text_reply("done"),
+    ])
+    result = run(run_agent("go", "user-1", model, clock=fixed_clock))
+
+    assert [c.name for c in result.tool_calls] == ["get_booking", "get_fare_rules"]
+
+
+def test_real_tool_calls_win_over_a_request_written_in_the_text():
+    both = tool_reply("get_booking", {"reference": "PNR001"})
+    both["content"] = json.dumps({"name": "get_fare_rules", "parameters": {"reference": "PNR001"}})
+    model = FakeModel([both, text_reply("done")])
+    result = run(run_agent("go", "user-1", model, clock=fixed_clock))
+
+    assert [c.name for c in result.tool_calls] == ["get_booking"]
+
+
+def test_text_requests_count_against_the_call_limit():
+    model = FakeModel([text_request("get_booking", {"reference": f"PNR00{i}"}) for i in range(1, MAX_TOOL_CALLS + 2)])
+    result = run(run_agent("loop", "user-1", model, clock=fixed_clock))
+
+    assert result.stop_reason == "too_many_calls"
+    assert len(result.tool_calls) == MAX_TOOL_CALLS
+
+
+def test_text_request_that_repeats_a_real_call_is_skipped_as_a_duplicate():
+    model = FakeModel([
+        tool_reply("get_booking", {"reference": "PNR001"}),
+        text_request("get_booking", {"reference": "PNR001"}),
+        text_reply("done"),
+    ])
+    result = run(run_agent("repeat", "user-1", model, clock=fixed_clock))
+
+    assert len(result.tool_calls) == 1
+    assert model.calls[2][-1]["content"] == HAS_CALLED_TOOL_ANSWER
+
+
+def test_text_request_still_runs_as_the_caller_not_as_a_model_supplied_user():
+    model = FakeModel([
+        text_request("get_booking", {"reference": "PNR001", "user_id": "user-1"}),
+        text_reply("done"),
+    ])
+    result = run(run_agent("go", "someone-else", model, clock=fixed_clock))
+
+    assert result.tool_calls[0].result.startswith("Invalid arguments")
+
+
+def test_a_promise_to_call_a_tool_is_not_treated_as_a_request():
+    model = FakeModel([text_reply("Now, calling the tool for PNR006.")])
+    result = run(run_agent("go", "user-1", model, clock=fixed_clock))
+
+    assert result.answer == "Now, calling the tool for PNR006."
+    assert result.tool_calls == []
+
+
+def test_json_mixed_into_prose_is_not_recovered_yet():
+    mixed = "Here is the PNR001 quote.\n" + json.dumps(
+        {"name": "quote_change", "parameters": {"reference": "PNR006", "new_date": "2026-12-12"}}
+    )
+    model = FakeModel([text_reply(mixed)])
+    result = run(run_agent("go", "user-1", model, clock=fixed_clock))
+
+    assert result.tool_calls == []  # a known gap: only a reply that is entirely the request is recovered
+    assert result.answer.startswith(mixed)
+
+
+def test_recovering_a_request_from_text_is_logged(caplog):
+    caplog.set_level(logging.INFO, logger="app.agent.loop")
+    model = FakeModel([text_request("get_booking", {"reference": "PNR001"}), text_reply("done")])
+    run(run_agent("go", "user-1", model, clock=fixed_clock))
+
+    assert any("recovered tool call from text: get_booking" in line for line in messages_logged(caplog))

@@ -58,7 +58,7 @@ flowchart TD
 | Retrieval | `app/retrieval/` | Semantic top-K; BM25; Reciprocal Rank Fusion; retrieval metrics | Built; hybrid not yet used by `/ask` |
 | Context and prompt | `app/rag/` | Ordered, source-labelled context; grounding and untrusted-data instructions; citation mapping from labels to chunk IDs | Built |
 | Evaluation | `eval/`, `scripts/` | Labelled dataset; per-case and aggregate Hit@K, Precision@K, Recall@K, MRR; strategy comparison | Built for retrieval; generation scoring designed |
-| Tool registry | `app/tools/registry.py`, `app/tools/schemas.py` | One `ToolSpec` per tool: name, model-facing description, argument model, function | Built |
+| Tool registry | `app/tools/registry.py`, `app/tools/schemas.py`, `app/tools/results.py` | One `ToolSpec` per tool: name, model-facing description, argument model, function; result views limit what the model sees | Built |
 | Tool executor | `app/tools/executor.py` | Reject unknown tools; validate arguments; run with the caller's identity; return errors as observations | Built |
 | Mock backend | `app/mock_backend/` | Bookings with owners; fare codes, change-fee bands, fares; owner check on every lookup | Built |
 | System prompt | `app/agent/prompts.py` | Server date, currency, ask-don't-guess, report credits and notes | Built |
@@ -157,6 +157,11 @@ return reply text                             stop: "answered"
   counts, not tool results, which contain booking data.
 - Parallel tool calls in one reply run in order and count individually
   against the limit.
+- **A request written as text is recovered, not trusted.** If a reply has no
+  tool calls but its text is a JSON object naming a registered tool with an
+  object of arguments, it becomes a request in the normal shape. It then goes
+  through validation, the owner check and every guard like any other request,
+  and the loop logs a warning.
 
 **Answer check (after the final reply, `app/agent/completeness.py`).** Two
 code-level steps run on the `answered` path only:
@@ -218,6 +223,7 @@ Implemented:
 ```text
 Chunk:        id (source:index), text, source, chunk_index, section
 Booking:      reference, owner_id, passenger_name, origin, destination, departure_date, fare_class, status
+BookingView: reference, passenger_name, origin, destination, departure_date, fare_class, status  (what get_booking returns to the model: no owner_id; an allow-list)
 ToolSpec:     name, description, args_model, func
 FareRules:    reference, fare_code, fare_type, changeable, condition
 ChangeQuote:  reference, new_date, changeable, reason, change_fee, old_fare, new_fare,
@@ -260,7 +266,7 @@ Full records with evidence are in [decisions.md](decisions.md).
 | Unknown tool requested | Registry lookup | Error observation |
 | Tool raises | Executor | Generic message to the model; full error logged |
 | Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; missing notes and credits appended; confirmed figures appended from the tool result |
-| Model writes a tool call as text, or says it will call one, instead of calling it | Observed in 2 of 5 live runs | Not handled: the loop treats that text as the final answer; the confirmed-figures block shows which quotes actually ran |
+| Model writes a tool call as text instead of making one | Observed in 2 of 8 live runs | A reply that is entirely a request naming a registered tool is recovered and run through the normal executor; JSON mixed into prose and promises like "now calling the tool" are not recovered, and the confirmed-figures block shows which quotes actually ran |
 | Agent loops or stalls | Call limit, deadline, duplicate detection | Stop with a safe message and a `stop_reason` |
 | Duplicate or late confirm | Idempotency key, proposal status | Return the original result (designed) |
 

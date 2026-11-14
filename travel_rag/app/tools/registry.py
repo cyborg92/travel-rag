@@ -3,9 +3,9 @@ from typing import Callable
 
 from pydantic import BaseModel
 
-from app.mock_backend.bookings import get_booking
 from app.mock_backend.fares import calculate_change_options, get_fare_rules
 from app.tools.schemas import GetBookingArgs, GetFareRulesArgs,QuoteChangeArgs
+from app.tools.results import lookup_booking
 
 
 @dataclass(frozen=True)
@@ -33,7 +33,7 @@ _SPECS = [
             "the user has given a booking reference; do not guess one."
         ),
         args_model=GetBookingArgs,
-        func=get_booking,
+        func=lookup_booking,
     ),
     ToolSpec(
         name="get_fare_rules",

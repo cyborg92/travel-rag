@@ -26,7 +26,7 @@ consequential actions that require human confirmation.
   code validates the arguments against a strict schema, authorizes the caller
   in the data layer, executes, and returns every failure as an observation the
   model can act on.
-- **Tested without a live model.** 240 pytest tests use fakes for the model,
+- **Tested without a live model.** 264 pytest tests use fakes for the model,
   embeddings, HTTP calls and the clock.
 
 ## Architecture
