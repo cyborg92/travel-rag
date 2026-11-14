@@ -207,3 +207,35 @@ gaps. A lenient parser raises the risk of executing JSON the model merely
 quoted, which is why the name must be a registered tool. Observed on one local
 model; the three live runs after the change did not trigger the path, so the
 unit tests are the evidence it works, not a live recovery.
+
+## Proposals: a state machine with an atomic claim, and a store that cannot be overwritten
+
+**Decision:** A consequential change is two steps. The model can only create a
+proposal; a person confirms a stored one. A proposal holds the owner, the exact
+parameters, a snapshot of the quote that was shown, a hash of those, an expiry
+and a state. The states and the allowed moves are a table in code, not
+conditionals scattered through functions. The store (SQLite) keeps the fields
+that change (status, claim time, result) as their own columns and the fixed
+ones as JSON; saving is insert-only; reads are scoped by owner; and the claim
+(`pending` to `executing`) will be one conditional `UPDATE` whose row count
+says who won.
+
+**Why:** Two requests can arrive together, so the check "is it still pending"
+and the change of state must be one step, or both win and the change happens
+twice. A state check in Python cannot give that; a conditional update in the
+database can. Saving as an upsert would let a stale copy of an executed
+proposal turn it back into `pending`, so state changes get their own
+conditional methods. Reading by id alone leaked another user's proposal in
+a test, so the owner is part of the query, and a missing proposal and someone
+else's look identical. The executing step has its own state because a crash
+between the claim and the change must be recoverable, and recovery is only safe
+if the change itself is idempotent, keyed by the proposal id. A price re-check
+at confirm closes the gap between showing a quote and applying it.
+
+**Trade-offs and follow-up:** Not built yet: the atomic claim, finishing and
+failing, cancel and lazy expiry, the hash check, the idempotent change, the
+`propose_change` tool and `confirm`. The hash protects little against someone
+who can edit the database; its value is that a confirm carries the hash the
+person was shown. SQLite suits one process; several processes or hosts would
+need a server database with the same conditional-update pattern. There is no
+authentication, so ownership is enforced against a fixed test user.

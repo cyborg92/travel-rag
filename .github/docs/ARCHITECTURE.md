@@ -41,7 +41,7 @@ flowchart TD
     ORCH --> EXE[Tool executor]
     EXE --> REG[Tool registry]
     EXE --> MOCK[(Mock booking and fare backend)]
-    ORCH -.designed.-> PROP[(Proposal store)]
+    ORCH -.in progress.-> PROP[(Proposal store)]
     ORCH -.designed.-> OBS[Traces, metrics, audit log]
 ```
 
@@ -63,7 +63,7 @@ flowchart TD
 | Mock backend | `app/mock_backend/` | Bookings with owners; fare codes, change-fee bands, fares; owner check on every lookup | Built |
 | System prompt | `app/agent/prompts.py` | Server date, currency, ask-don't-guess, report credits and notes | Built |
 | Agent loop | `app/agent/loop.py`, `app/agent/state.py`, `app/agent/model.py` | Repeat model → tools → observations with a call limit, a deadline, repeated-call detection and a trace log; the model function and clock are injected | Built; per-tool timeout designed |
-| Proposal store | | Pending consequential actions: ID, owner, exact parameters and their hash, expiry, idempotency key | Designed |
+| Proposal store | `app/proposals/` | Pending consequential actions: ID, owner, exact parameters, quoted amounts, parameter hash, expiry; a state machine with an explicit transition table; SQLite storage with insert-only saves and owner-scoped reads | In progress: models, transition table, `transition` and `save`/`get` built; atomic claim, confirm and execute designed |
 | Observability and audit | | Per-request trace; immutable record of proposed, confirmed and executed actions | Designed |
 
 ## 5. Request flows
@@ -181,7 +181,7 @@ presenting it. For amounts that decide what a passenger pays, the production
 design is for the code to render the figures and for the model never to write
 a number.
 
-### 5.4 Human approval for a change (designed)
+### 5.4 Human approval for a change (in progress)
 
 ```mermaid
 sequenceDiagram
@@ -195,15 +195,39 @@ sequenceDiagram
     O->>P: store proposal (id, owner, parameters, hash, expiry)
     O->>AU: PROPOSED
     O-->>U: quote + proposal_id + "confirm?"
-    U->>O: POST /confirm {proposal_id, idempotency_key}
-    O->>P: load stored proposal; verify owner, expiry, unused
-    O->>B: execute exactly the stored parameters
+    U->>O: POST /confirm {proposal_id, params_hash}
+    O->>P: claim (one atomic conditional update: owner, pending, not expired)
+    O->>B: re-quote and compare, then apply the stored parameters with the proposal id as idempotency key
     O->>AU: EXECUTED
     O-->>U: result (a repeated confirm returns the same result)
 ```
 
 The model can produce a proposal but never execute one. Confirmation executes
 the stored proposal, not parameters the client resends.
+
+**States and moves.** `pending`, `executing`, `executed`, `failed`, `expired`,
+`cancelled`. Only `pending` and `executing` can move: `pending` to `executing`
+(the claim), `expired`, `cancelled` or `failed` (a stale price found before the
+claim); `executing` to `executed`, `failed`, or `executing` again (re-claiming
+after a crash). The four other states are terminal. The table is data in
+`app/proposals/models.py`; `transition` enforces it for one object.
+
+**Why two layers.** `transition` protects one object in one process. When two
+requests arrive at once, only a conditional update in the store can decide the
+winner, so the claim is a single `UPDATE ... WHERE status = 'pending' AND
+expires_at > now` and the caller checks the row count. A save is insert-only: a
+stale in-memory copy must never overwrite a state change.
+
+**Idempotency lives in two places.** The state machine decides whether to run
+the change, and the change itself is keyed by the proposal id so replaying it
+after a crash is safe. A repeated confirm of an executed proposal returns the
+stored result.
+
+**Built so far:** models, the transition table, `transition`, and the store's
+`save` and `get` (reads are scoped by owner, so another user's proposal reads as
+missing). **Not built:** the atomic claim, finish and fail, cancel and expiry,
+the parameter hash, the idempotent change in the mock backend, the
+`propose_change` tool and `confirm`.
 
 ### 5.5 Combined RAG and tools (target)
 
@@ -233,7 +257,7 @@ ChangeQuote:  reference, new_date, changeable, reason, change_fee, old_fare, new
 Designed:
 
 ```text
-Proposal:     id, owner, tool, args, args_hash, status, created_at, expires_at, idempotency_key
+Proposal:     id, owner_id, action, reference, new_date, quote, params_hash, status, created_at, expires_at, claimed_at, result
 Trace:        request_id, prompt_version, model, hits[], tool_calls[], timings{}, tokens{}, outcome, error
 AuditEvent:   ts, actor, request_id, action, proposal_id, outcome
 ```
@@ -268,7 +292,7 @@ Full records with evidence are in [decisions.md](decisions.md).
 | Final answer omits or changes tool facts | Observed in runs | Facts carried as data in the result; prompt rules; missing notes and credits appended; confirmed figures appended from the tool result |
 | Model writes a tool call as text instead of making one | Observed in 2 of 8 live runs | A reply that is entirely a request naming a registered tool is recovered and run through the normal executor; JSON mixed into prose and promises like "now calling the tool" are not recovered, and the confirmed-figures block shows which quotes actually ran |
 | Agent loops or stalls | Call limit, deadline, duplicate detection | Stop with a safe message and a `stop_reason` |
-| Duplicate or late confirm | Idempotency key, proposal status | Return the original result (designed) |
+| Duplicate or late confirm | Proposal status, atomic claim, idempotent change | Return the original result (designed; state machine and store partly built) |
 
 ## 9. Security model
 

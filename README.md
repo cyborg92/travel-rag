@@ -63,7 +63,7 @@ consequential actions that require human confirmation.
 | System prompt for tool use | Built |
 | Bounded agent loop (call limit, deadline, repeated-call guard, trace log) | Built; per-tool timeout designed |
 | Answer check: required notes and credits, plus code-built confirmed figures | Built (a floor, not a correctness proof) |
-| Propose / confirm / execute for booking changes | Designed |
+| Propose / confirm / execute for booking changes | In progress: proposal model, state machine and SQLite store built; atomic claim, confirm and execute not yet |
 | Tracing, metrics, audit log | Designed |
 
 ## Evaluation results
