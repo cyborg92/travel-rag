@@ -12,7 +12,9 @@ from starlette.responses import Response
 
 from app.config import get_settings
 from app.api.routes import router
+from app.agent.model import make_ollama_model
 from app.api.routes.demo import router as demo_router
+from app.api.routes.demo_agent import router as demo_agent_router
 from app.embeddings.client import OllamaEmbeddingClient
 from app.llm.client import OllamaChatClient
 
@@ -28,6 +30,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
             http_client,
             settings.ollama_embedding_model,
         )
+        app.state.ask_model = make_ollama_model(http_client, settings.ollama_model)
         yield
 
 app = FastAPI(
@@ -47,6 +50,8 @@ app = FastAPI(
 app.include_router(router)
 if get_settings().enable_demo_routes:
     app.include_router(demo_router)
+    if get_settings().enable_demo_agent:
+        app.include_router(demo_agent_router)
 
 
 @app.middleware("http")
