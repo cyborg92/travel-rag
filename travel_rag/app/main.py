@@ -35,6 +35,13 @@ app = FastAPI(
     description="A travel-policy assistant with grounded RAG answers and guarded tool use.",
     version="0.1.0",
     lifespan=lifespan,
+    openapi_tags=[
+        {
+            "name": "demo",
+            "description": "Deterministic showcase routes. No model is called. Pick a named "
+            "example from each route's Examples dropdown. The caller is a fixed synthetic user.",
+        }
+    ],
 )
 
 app.include_router(router)

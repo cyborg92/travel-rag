@@ -3,7 +3,14 @@ import json
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from app.api.routes.demo import DEMO_USER_ID, router
+from app.api.routes.demo import (
+    DEMO_USER_ID,
+    EXECUTE_EXAMPLES,
+    EXECUTE_RESPONSE_EXAMPLES,
+    QUOTE_EXAMPLES,
+    QUOTE_RESPONSE_EXAMPLES,
+    router,
+)
 from app.config import get_settings
 
 
@@ -87,3 +94,66 @@ def test_quote_for_someone_elses_booking_is_404() -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "No booking found for PNR004"
+
+
+# --- the documented examples must match real behaviour ----------------------
+
+EXECUTE_EXPECTED_START = {
+    "own_booking": '{"reference":"PNR001"',
+    "not_yours": "Error: No booking found for PNR004",
+    "missing": "Error: No booking found for PNR999",
+    "identity_injection": "Invalid arguments for 'get_booking'",
+    "unknown_tool": "Unknown tool 'cancel_booking'",
+    "bad_reference": "Invalid arguments for 'get_booking'",
+    "placeholder_date": "Invalid arguments for 'quote_change'",
+    "fare_rules_restricted": '{"reference":"PNR005"',
+}
+
+# key -> (changeable, change_fee, total_to_pay)
+QUOTE_EXPECTED = {
+    "costlier_date": (True, 3500, 4300),
+    "cheaper_date_credit": (True, 3500, 3500),
+    "domestic_credit": (True, 500, 500),
+    "boundary_exactly_72h": (True, 1000, 2500),
+    "boundary_73h": (True, 500, 2000),
+    "too_close": (False, None, None),
+    "non_changeable_fare": (False, None, None),
+    "cancelled_booking": (False, None, None),
+}
+
+
+def test_every_execute_example_has_a_documented_response_that_matches_the_endpoint() -> None:
+    client = make_client()
+    assert set(EXECUTE_EXAMPLES) == set(EXECUTE_EXPECTED_START) == set(EXECUTE_RESPONSE_EXAMPLES)
+
+    for key, example in EXECUTE_EXAMPLES.items():
+        response = client.post("/demo/tools/execute", json=example["value"])
+
+        assert response.status_code == 200, key
+        assert response.json()["observation"].startswith(EXECUTE_EXPECTED_START[key]), key
+        assert response.json() == EXECUTE_RESPONSE_EXAMPLES[key]["value"], key
+
+
+def test_every_quote_example_matches_the_endpoint_and_the_documented_figures() -> None:
+    client = make_client()
+    assert set(QUOTE_EXPECTED) | {"not_yours"} == set(QUOTE_EXAMPLES)
+
+    for key, (changeable, fee, total) in QUOTE_EXPECTED.items():
+        body = client.post("/demo/tools/quote", json=QUOTE_EXAMPLES[key]["value"]).json()
+
+        assert (body["changeable"], body["change_fee"], body["total_to_pay"]) == (changeable, fee, total), key
+        assert body == QUOTE_RESPONSE_EXAMPLES[key]["value"], key
+    assert client.post("/demo/tools/quote", json=QUOTE_EXAMPLES["not_yours"]["value"]).status_code == 404
+
+
+def test_swagger_schema_offers_the_examples_and_descriptions() -> None:
+    schema = make_client().app.openapi()
+    execute = schema["paths"]["/demo/tools/execute"]["post"]
+    quote = schema["paths"]["/demo/tools/quote"]["post"]
+
+    for operation, examples in ((execute, EXECUTE_EXAMPLES), (quote, QUOTE_EXAMPLES)):
+        body = operation["requestBody"]["content"]["application/json"]
+        assert set(body["examples"]) == set(examples)
+        assert operation["summary"] and "How to use" in operation["description"]
+        assert all(example["summary"] and example["description"] for example in body["examples"].values())
+        assert operation["responses"]["200"]["content"]["application/json"]["examples"]
