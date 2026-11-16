@@ -2,8 +2,6 @@ import re
 import math
 from collections import Counter
 
-from numpy import greater
-
 PATTERN_1 = r"[a-z0-9]+"
 PATTERN_2 = r"[a-z0-9]+(?:-[a-z0-9]+)*"
 PATTERN_3 = r"\d{1,3}(?:,\d{3})+|[a-z0-9]+(?:-[a-z0-9]+)*"
