@@ -252,12 +252,13 @@ ToolSpec:     name, description, args_model, func
 FareRules:    reference, fare_code, fare_type, changeable, condition
 ChangeQuote:  reference, new_date, changeable, reason, change_fee, old_fare, new_fare,
               fare_difference, credit_issued, credit_valid_months, total_to_pay, currency, notes
+Proposal:     id, owner_id, action, reference, new_date, quote, params_hash, status, created_at, expires_at, claimed_at, result
+              (built as a model and a SQLite row; params_hash is stored but not yet computed or checked)
 ```
 
 Designed:
 
 ```text
-Proposal:     id, owner_id, action, reference, new_date, quote, params_hash, status, created_at, expires_at, claimed_at, result
 Trace:        request_id, prompt_version, model, hits[], tool_calls[], timings{}, tokens{}, outcome, error
 AuditEvent:   ts, actor, request_id, action, proposal_id, outcome
 ```
