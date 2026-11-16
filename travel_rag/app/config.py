@@ -13,6 +13,9 @@ class Settings(BaseSettings):
     ollama_timeout_seconds: float = Field(default=60, gt=0)
     # Demo routes run deterministic code paths (no model) for showcasing. On by default; set TRAVEL_RAG_ENABLE_DEMO_ROUTES=false to hide them.
     enable_demo_routes: bool = True
+    # The demo agent route calls a live model (slow, varies per run), so it has its own flag. On by default; set TRAVEL_RAG_ENABLE_DEMO_AGENT=false to hide it.
+    enable_demo_agent: bool = True
+    demo_agent_max_runs_per_minute: int = Field(default=6, gt=0)
 
 
 @lru_cache

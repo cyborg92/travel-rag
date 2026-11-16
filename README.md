@@ -80,6 +80,7 @@ actions that require human confirmation.
 | Recovery of a tool request the model wrote as text | Built (a reply that is entirely the request) |
 | Answer check: missing notes and credits, confirmed figures | Built (a floor, not a correctness proof) |
 | Demo routes for the deterministic tool paths | Built; no authentication |
+| Demo route that runs the agent loop on a live model (`POST /demo/agent/run`) | Built; on by default, hide it with `TRAVEL_RAG_ENABLE_DEMO_AGENT=false`; one run at a time and a per-minute cap, no authentication |
 | Agent loop behind an API route | Not built |
 | Propose / confirm / execute for booking changes | In progress: proposal model, state machine and SQLite store built; atomic claim, confirm and execute not yet |
 | Authentication | Not built; a fixed test user stands in |
