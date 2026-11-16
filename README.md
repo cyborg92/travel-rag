@@ -34,7 +34,7 @@ actions that require human confirmation.
 - **Answer checks.** After the final reply, code appends any note or credit the
   tool results contain and the answer left out, and the confirmed figures of
   every successful quote, built from the tool result and not from the model.
-- **Tested without a live model.** 335 pytest tests use fakes for the model,
+- **Tested without a live model.** 352 pytest tests use fakes for the model,
   embeddings, HTTP calls and the clock.
 
 ## Architecture
