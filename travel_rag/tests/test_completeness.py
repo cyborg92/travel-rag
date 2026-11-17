@@ -1,6 +1,14 @@
+import pytest
+
 from app.agent.completeness import RequiredFact, missing_facts, parse_result, quote_summaries, required_facts
 from app.agent.state import ToolCallRecord
 from app.tools.executor import execute_tool
+from tests.fakes import freeze_backend_clock
+
+
+@pytest.fixture(autouse=True)
+def _frozen_backend_clock(monkeypatch):
+    freeze_backend_clock(monkeypatch)
 
 
 def test_valid_result_object_is_returned_as_a_dict():

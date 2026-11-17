@@ -3,6 +3,8 @@ import json
 import logging
 from datetime import datetime, timedelta
 
+import pytest
+
 from app.agent.loop import (
     DEADLINE_SECONDS,
     HAS_CALLED_TOOL_ANSWER,
@@ -14,9 +16,14 @@ from app.agent.loop import (
     TIMEOUT_ANSWER,
     run_agent,
 )
-from tests.fakes import FakeModel, text_reply, tool_reply
+from tests.fakes import FakeModel, freeze_backend_clock, text_reply, tool_reply
 
 NOW = datetime(2026, 11, 14, 10, 0, 0)
+
+
+@pytest.fixture(autouse=True)
+def _frozen_backend_clock(monkeypatch):
+    freeze_backend_clock(monkeypatch)
 
 
 def fixed_clock() -> datetime:

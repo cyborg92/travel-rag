@@ -1,5 +1,21 @@
 """Test doubles for the agent loop: a scripted stand-in for the chat model."""
 from copy import deepcopy
+from datetime import datetime
+
+BACKEND_NOW = datetime(2026, 11, 12, 10, 0)
+
+
+class FrozenDatetime(datetime):
+    """datetime whose now() is fixed, so fee bands do not move as real time passes."""
+
+    @classmethod
+    def now(cls, tz=None):
+        return BACKEND_NOW
+
+
+def freeze_backend_clock(monkeypatch) -> None:
+    """The mock backend reads the wall clock when quoting; pin it for tests that go through the tools."""
+    monkeypatch.setattr("app.mock_backend.fares.datetime", FrozenDatetime)
 
 
 def text_reply(content: str) -> dict:
